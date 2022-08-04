@@ -15,15 +15,16 @@ class ScraperManager:
             tutorialbar_enabled: bool,
             discudemy_enabled: bool,
             max_pages,
+            driver
     ):
         self.tutorialbar_scraper = TutorialBarScraper(
-            tutorialbar_enabled, max_pages=max_pages
+            tutorialbar_enabled, driver,max_pages=max_pages
         )
         self.discudemy_scraper = DiscUdemyScraper(
-            discudemy_enabled, max_pages=max_pages
+            discudemy_enabled, driver, max_pages=max_pages
         )
         self.udemy_scraper = UdemyScraper(
-            udemy_scraper_enabled, max_pages=max_pages
+            udemy_scraper_enabled,driver, max_pages=max_pages
         )
         self._scrapers = (
             self.udemy_scraper,

@@ -15,7 +15,8 @@ class ScraperStates(Enum):
 
 
 class BaseScraper(ABC):
-    def __init__(self):
+    def __init__(self, driver):
+        self.driver = driver
         self._state = None
         self.scraper_name = None
         self.max_pages = None
@@ -106,9 +107,17 @@ class BaseScraper(ABC):
             self.set_state_complete()
 
         return should_run
-
     @staticmethod
-    def validate_coupon_url(url) -> Optional[str]:
+    async def  validate_courses_url(url)->Optional[str]:
+        url_pattern = r"^https:\/\/(www\.)?ibm-learning\.udemy\.com\/courses\/.+\/..*$"
+        #https://regex101.com/r/1E6RsB/1
+        #https://regex101.com/r/yl2S3g/1
+        matching = re.match(url_pattern, url)
+        if matching is not None:
+            matching = matching.group()
+            return matching
+    @staticmethod
+    async def  validate_course_url(url) -> Optional[str]:
         """
         Validate the udemy coupon url passed in
         If it matches the pattern it is returned else it returns None
@@ -116,7 +125,8 @@ class BaseScraper(ABC):
         :param url: The url to check the udemy coupon pattern for
         :return: The validated url or None
         """
-        url_pattern = r"^https:\/\/www.udemy.com.*couponCode=.*$"
+        url_pattern = r"https:\/\/www\.ibm-learning\.udemy\.com\/course\/.*$"
+        #https://regex101.com/r/OfSjyC/1
         matching = re.match(url_pattern, url)
         if matching is not None:
             matching = matching.group()

@@ -18,8 +18,8 @@ class TutorialBarScraper(BaseScraper):
     DOMAIN = "https://www.tutorialbar.com"
     AD_DOMAINS = ("https://amzn", "https://bit.ly")
 
-    def __init__(self, enabled, max_pages=None):
-        super().__init__()
+    def __init__(self, enabled, driver, max_pages=None):
+        super().__init__(driver=driver)
         self.scraper_name = "tutorialbar"
         if not enabled:
             self.set_state_disabled()
@@ -82,7 +82,7 @@ class TutorialBarScraper(BaseScraper):
         :param str url: The url to scrape data from
         :return: list of pages on tutorialbar.com that contain Udemy coupons
         """
-        text = await get(url)
+        text = await get(url, self.driver)
         if text is not None:
             soup = BeautifulSoup(text.decode("utf-8"), "html.parser")
 
@@ -97,8 +97,8 @@ class TutorialBarScraper(BaseScraper):
 
             return course_links
 
-    @staticmethod
-    async def get_udemy_course_link(url: str) -> str:
+
+    async def get_udemy_course_link(self, url: str) -> str:
         """
         Gets the udemy course link
 
@@ -106,7 +106,7 @@ class TutorialBarScraper(BaseScraper):
         :return: Coupon link of the udemy course
         """
 
-        text = await get(url)
+        text = await get(url,driver=self.driver)
         if text is not None:
             soup = BeautifulSoup(text.decode("utf-8"), "html.parser")
             udemy_link = (

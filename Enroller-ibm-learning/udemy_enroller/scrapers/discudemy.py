@@ -4,6 +4,7 @@ from typing import List
 
 from bs4 import BeautifulSoup
 
+
 from udemy_enroller.http import get
 from udemy_enroller.scrapers.base_scraper import BaseScraper
 
@@ -17,8 +18,8 @@ class DiscUdemyScraper(BaseScraper):
 
     DOMAIN = "https://discudemy.com"
 
-    def __init__(self, enabled, max_pages=None):
-        super().__init__()
+    def __init__(self, enabled,driver, max_pages=None):
+        super().__init__(driver)
         self.scraper_name = "discudemy"
         if not enabled:
             self.set_state_disabled()
@@ -38,6 +39,7 @@ class DiscUdemyScraper(BaseScraper):
         self.max_pages_reached()
         return links
 
+
     async def get_links(self) -> List:
         """
         Scrape udemy links from discudemy.com
@@ -46,7 +48,7 @@ class DiscUdemyScraper(BaseScraper):
         """
         discudemy_links = []
         self.current_page += 1
-        coupons_data = await get(f"{self.DOMAIN}/all/{self.current_page}")
+        coupons_data = await get(f"{self.DOMAIN}/all/{self.current_page}",driver=self.driver)
         soup = BeautifulSoup(coupons_data.decode("utf-8"), "html.parser")
         for course_card in soup.find_all("a", class_="card-header"):
             url_end = course_card["href"].split("/")[-1]
@@ -61,8 +63,8 @@ class DiscUdemyScraper(BaseScraper):
 
         return links
 
-    @classmethod
-    async def get_udemy_course_link(cls, url: str) -> str:
+
+    async def get_udemy_course_link(self, url: str) -> str:
         """
         Gets the udemy course link
 
@@ -70,10 +72,10 @@ class DiscUdemyScraper(BaseScraper):
         :return: Coupon link of the udemy course
         """
 
-        data = await get(url)
+        data = await get(url, driver=self.driver)
         soup = BeautifulSoup(data.decode("utf-8"), "html.parser")
         for link in soup.find_all("a", href=True):
-            udemy_link = cls.validate_coupon_url(link["href"])
+            udemy_link =  super().validate_course_url(link["href"])
             if udemy_link is not None:
                 return udemy_link
 

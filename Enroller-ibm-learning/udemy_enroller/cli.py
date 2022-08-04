@@ -75,8 +75,9 @@ def run(
     """
     settings = Settings(delete_settings, delete_cookie)
     print("ci arrivo")
+
     if browser:
-        global dm
+
         dm = DriverManager(browser=browser, is_ci_build=settings.is_ci_build)
         redeem_courses_ui(
             dm.driver,

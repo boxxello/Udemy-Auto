@@ -74,6 +74,7 @@ class DriverManager:
         # Maximize the browser
         self.driver.maximize_window()
 
+
     @staticmethod
     def _build_ci_options_chrome():
         """

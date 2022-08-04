@@ -1,5 +1,7 @@
 import aiohttp
+import selenium
 from bs4 import BeautifulSoup
+from selenium.webdriver.chrome.webdriver import WebDriver
 
 from udemy_enroller.logging import get_logger
 
@@ -7,7 +9,7 @@ logger = get_logger()
 #import driver manager instance from cli file
 
 
-async def get(url, headers=None):
+async def get(url,  driver: WebDriver = None):
     """
     Send REST get request to the url passed in
 
@@ -18,8 +20,11 @@ async def get(url, headers=None):
 
     #can't do it no more because html gets created by js.
     #got to use the driver.
+    print(driver)
 
-
+    driver.get(url)
+    print("SESSO")
+    return driver.page_source
     # if headers is None:
     #     headers = {}
     # try:

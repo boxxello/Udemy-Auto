@@ -180,7 +180,8 @@ def redeem_courses_ui(
             udemy_scraper_enabled,
             tutorialbar_enabled,
             discudemy_enabled,
-            max_pages
+            max_pages,
+            driver
         )
         _redeem_courses_ui(driver, settings, scrapers)
     except Exception as e:

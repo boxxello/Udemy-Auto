@@ -141,8 +141,11 @@ class UdemyActionsUI:
                             input(
                                 "Solve otp insertion. Hit enter once solved "
                             )
-                            submit_btn = self.driver.find_element_by_id("submit_btn")
-                            submit_btn.click()
+                            try:
+                                submit_btn = self.driver.find_element_by_id("submit_btn")
+                                submit_btn.click()
+                            except NoSuchElementException:
+                                pass
                     except TimeoutException:
                         logger.info("No otp found")
                         pass

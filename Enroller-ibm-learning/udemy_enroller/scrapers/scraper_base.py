@@ -17,12 +17,14 @@ class UdemyScraper(BaseScraper):
 
     DOMAIN = "https://ibm-learning.udemy.com"
 
-    def __init__(self, enabled, max_pages=None):
-        super().__init__()
+    def __init__(self, enabled, driver, max_pages=None):
+        super().__init__(driver)
+
         self.scraper_name = "ibm-learning.udemy"
         if not enabled:
             self.set_state_disabled()
         self.max_pages = max_pages
+
 
     @BaseScraper.time_run
     async def run(self) -> List:
@@ -46,15 +48,28 @@ class UdemyScraper(BaseScraper):
         """
         udemy_links = []
         self.current_page += 1
-        coupons_data = await get(f"{self.DOMAIN}/home/my-courses/learning/?p={self.current_page}")
-        soup = BeautifulSoup(coupons_data.decode("utf-8"), "html.parser")
+        coupons_data = await get(f"{self.DOMAIN}/home/my-courses/learning/?p={self.current_page}", driver=self.driver)
+        soup = BeautifulSoup(coupons_data, "html.parser")
 
 
         for course_card in soup.find_all("a"):
-            url_end = course_card["href"].split("/")[-1]
-            udemy_links.append(f"{self.DOMAIN}/go/{url_end}")
 
-        links = await self.gather_udemy_course_links(udemy_links)
+            url_end = course_card["href"].split("/")[-1]
+
+            complete_url=f"{self.DOMAIN}{course_card['href']}"
+            udemy_links.append(complete_url)
+
+
+        for counter, course in enumerate(udemy_links):
+            logger.debug(f"Received Link {counter + 1} : {course}")
+        print("NOW GOING TO START THE FN ")
+        links = await self.gather_course_links_from_top(udemy_links)
+        print("FINISHEd THE FN ")
+        print("Printing the links")
+        for counter, course in enumerate(links):
+            logger.debug(f"Received Link {counter + 1} : {course}")
+        if links:
+            new_lins=await self.gather_udemy_course_links(links)
 
         for counter, course in enumerate(links):
             logger.debug(f"Received Link {counter + 1} : {course}")
@@ -63,8 +78,19 @@ class UdemyScraper(BaseScraper):
 
         return links
 
-    @classmethod
-    async def get_udemy_course_link(cls, url: str) -> str:
+    async def gather_course_links_from_top(self, courses: List[str]):
+        """
+        Async fetching of the udemy course links from ibm-learning.udemy.com
+
+        :param list courses: A list of ibm-learning.udemy.com course links we want to fetch the udemy links for
+        :return: list of udemy links
+        """
+        return [
+            link
+            for link in await asyncio.gather(*map(self.validate_courses_url, courses))
+            if link is not None
+        ]
+    async def get_udemy_course_link(self, url: str) -> str:
         """
         Gets the udemy course link
 
@@ -72,10 +98,10 @@ class UdemyScraper(BaseScraper):
         :return: Coupon link of the udemy course
         """
 
-        data = await get(url)
-        soup = BeautifulSoup(data.decode("utf-8"), "html.parser")
+        data = await get(url, driver=self.driver)
+        soup = BeautifulSoup(data, "html.parser")
         for link in soup.find_all("a", href=True):
-            udemy_link = cls.validate_coupon_url(link["href"])
+            udemy_link =  super().validate_course_url(link["href"])
             if udemy_link is not None:
                 return udemy_link
 
@@ -91,6 +117,7 @@ class UdemyScraper(BaseScraper):
             for link in await asyncio.gather(*map(self.get_udemy_course_link, courses))
             if link is not None
         ]
+
 
     @staticmethod
     def _get_last_page(soup: BeautifulSoup) -> int:
