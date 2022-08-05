@@ -66,34 +66,7 @@ def _redeem_courses(settings: Settings, scrapers: ScraperManager) -> None:
             return
 
 
-def redeem_courses(
-        settings: Settings,
-        udemy_scraper_enabled,
-        tutorialbar_enabled: bool,
-        discudemy_enabled: bool,
 
-        max_pages: Union[int, None],
-) -> None:
-    """
-    Wrapper of _redeem_courses which catches unhandled exceptions
-
-    :param Settings settings: Core settings used for Udemy
-    :param bool udemy_scraper_enabled: Boolean signifying if udemy scraper scraper should run
-    :param bool tutorialbar_enabled: Boolean signifying if tutorialbar scraper should run
-    :param bool discudemy_enabled: Boolean signifying if discudemy scraper should run
-    :param int max_pages: Max pages to scrape from sites (if pagination exists)
-    :return:
-    """
-    try:
-        scrapers = ScraperManager(
-            udemy_scraper_enabled,
-            tutorialbar_enabled,
-            discudemy_enabled,
-            max_pages
-        )
-        _redeem_courses(settings, scrapers)
-    except Exception as e:
-        logger.error(f"Exception in redeem courses: {e}")
 
 
 def _redeem_courses_ui(

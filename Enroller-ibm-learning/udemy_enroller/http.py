@@ -20,10 +20,7 @@ async def get(url,  driver: WebDriver = None):
 
     #can't do it no more because html gets created by js.
     #got to use the driver.
-    print(driver)
-
     driver.get(url)
-    print("SESSO")
     return driver.page_source
     # if headers is None:
     #     headers = {}

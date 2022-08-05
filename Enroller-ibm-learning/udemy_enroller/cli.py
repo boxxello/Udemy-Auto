@@ -5,7 +5,7 @@ from typing import Tuple, Union
 
 from udemy_enroller import ALL_VALID_BROWSER_STRINGS, DriverManager, Settings
 from udemy_enroller.logging import get_logger
-from udemy_enroller.runner import redeem_courses, redeem_courses_ui
+from udemy_enroller.runner import  redeem_courses_ui
 
 logger = get_logger()
 
@@ -87,14 +87,7 @@ def run(
             discudemy_enabled,
             max_pages,
         )
-    else:
-        redeem_courses(
-            settings,
-            udemy_scraper_enabled,
-            tutorialbar_enabled,
-            discudemy_enabled,
-            max_pages,
-        )
+
 
 
 def parse_args() -> Namespace:
