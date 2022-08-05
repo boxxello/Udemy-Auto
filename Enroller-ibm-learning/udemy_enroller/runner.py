@@ -42,13 +42,9 @@ def _redeem_courses(settings: Settings, scrapers: ScraperManager) -> None:
                 try:
                     status = udemy_actions.enroll(course_link)
 
-                    if status == UdemyStatus.ENROLLED.value:
-                        # Try to avoid udemy throttling by sleeping for 1-5 seconds
-                        sleep_time = random.choice(range(1, 5))
-                        logger.debug(
-                            f"Sleeping for {sleep_time} seconds between enrolments"
-                        )
-                        time.sleep(sleep_time)
+                    if status == UdemyStatus.ENROLLED.value or status == UdemyStatus.ALREADY_ENROLLED.value:
+                        logger.info(f"Enrolled/Already enrolled in {course_link}, trying to get it to finish")
+                        udemy_actions.wait_for_course_to_finish(course_link)
                 except KeyboardInterrupt:
                     udemy_actions.stats.table()
                     logger.error("Exiting the script")
@@ -66,7 +62,38 @@ def _redeem_courses(settings: Settings, scrapers: ScraperManager) -> None:
             return
 
 
+def redeem_courses(
+        driver,
+        settings: Settings,
 
+        udemy_scraper_enabled: bool,
+        discudemy_enabled: bool,
+        coursevania_enabled: bool,
+        max_pages: Union[int, None],
+) -> None:
+    """
+    Wrapper of _redeem_courses which catches unhandled exceptions
+
+    :param Settings settings: Core settings used for Udemy
+    :param bool freebiesglobal_enabled: Boolean signifying if freebiesglobal scraper should run
+    :param bool tutorialbar_enabled: Boolean signifying if tutorialbar scraper should run
+    :param bool discudemy_enabled: Boolean signifying if discudemy scraper should run
+    :param bool coursevania_enabled: Boolean signifying if coursevania scraper should run
+    :param int max_pages: Max pages to scrape from sites (if pagination exists)
+    :return:
+    """
+    try:
+        scrapers = ScraperManager(
+
+            udemy_scraper_enabled,
+            discudemy_enabled,
+            coursevania_enabled,
+            max_pages,
+            driver,
+        )
+        _redeem_courses(settings, scrapers)
+    except Exception as e:
+        logger.error(f"Exception in redeem courses: {e}")
 
 
 def _redeem_courses_ui(

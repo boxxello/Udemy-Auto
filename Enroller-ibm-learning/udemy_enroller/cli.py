@@ -5,7 +5,7 @@ from typing import Tuple, Union
 
 from udemy_enroller import ALL_VALID_BROWSER_STRINGS, DriverManager, Settings
 from udemy_enroller.logging import get_logger
-from udemy_enroller.runner import  redeem_courses_ui
+from udemy_enroller.runner import redeem_courses_ui, redeem_courses
 
 logger = get_logger()
 
@@ -75,10 +75,9 @@ def run(
     """
     settings = Settings(delete_settings, delete_cookie)
     print("ci arrivo")
-
+    dm = DriverManager(browser=browser, is_ci_build=settings.is_ci_build)
     if browser:
-
-        dm = DriverManager(browser=browser, is_ci_build=settings.is_ci_build)
+        print("ci arrivo browser")
         redeem_courses_ui(
             dm.driver,
             settings,
@@ -87,9 +86,17 @@ def run(
             discudemy_enabled,
             max_pages,
         )
+    else:
+        print("ci arrivo no browser")
+        redeem_courses(
+            dm.driver,
+            settings,
+            udemy_scraper_enabled,
+            tutorialbar_enabled,
+            discudemy_enabled,
+            max_pages,
 
-
-
+        )
 def parse_args() -> Namespace:
     """
     Parse args from the CLI or use the args passed in
@@ -97,7 +104,6 @@ def parse_args() -> Namespace:
     :return: Args to be used in the script
     """
     parser = argparse.ArgumentParser(description="Udemy Enroller")
-    print(ALL_VALID_BROWSER_STRINGS)
     parser.add_argument(
         "--browser",
         required=False,

@@ -207,111 +207,114 @@ class UdemyActionsUI:
         self.driver.get(url)
 
         course_name = self.driver.title
-
+        print("arrivo almeno qua1")
         if not self._check_languages(course_name):
             return UdemyStatus.UNWANTED_LANGUAGE.value
 
+        print("arrivo almeno qua2")
         if not self._check_categories(course_name):
             return UdemyStatus.UNWANTED_CATEGORY.value
+        print("arrivo almeno qua3")
+        try:
+            # check if element is present before clicking
+            buy_course_button_xpath = "//button[@data-purpose='buy-this-course-button']"
+            # We need to wait for this element to be clickable before checking if already purchased
+            WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, buy_course_button_xpath))
+            )
 
-        # TODO: Make this depend on an element.
-        time.sleep(2)
-
-        # Enroll Now 1
-        buy_course_button_xpath = "//button[@data-purpose='buy-this-course-button']"
-        # We need to wait for this element to be clickable before checking if already purchased
-        WebDriverWait(self.driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, buy_course_button_xpath))
-        )
-
+        except TimeoutException:
+            return UdemyStatus.ALREADY_ENROLLED.value
+        else:
         # Check if already enrolled. If add to cart is available we have not yet enrolled
-        if not self._check_enrolled(course_name):
-            element_present = EC.presence_of_element_located(
-                (By.XPATH, buy_course_button_xpath)
-            )
-            WebDriverWait(self.driver, 10).until(element_present).click()
-
-            # Enroll Now 2
-            enroll_button_xpath = "//div[starts-with(@class, 'checkout-button--checkout-button--container')]//button"
-            element_present = EC.presence_of_element_located(
-                (
-                    By.XPATH,
-                    enroll_button_xpath,
-                )
-            )
-            WebDriverWait(self.driver, 10).until(element_present)
-
-            # Check if zipcode exists before doing this
-            if self.settings.zip_code:
-                # zipcode is only required in certain regions (e.g USA)
-                try:
-                    element_present = EC.presence_of_element_located(
-                        (
-                            By.ID,
-                            "billingAddressSecondaryInput",
-                        )
-                    )
-                    WebDriverWait(self.driver, 5).until(element_present).send_keys(
-                        self.settings.zip_code
-                    )
-
-                    # After you put the zip code in, the page refreshes itself and disables the enroll button for a split
-                    # second.
-                    enroll_button_is_clickable = EC.element_to_be_clickable(
-                        (By.XPATH, enroll_button_xpath)
-                    )
-                    WebDriverWait(self.driver, 5).until(enroll_button_is_clickable)
-                except (TimeoutException, NoSuchElementException):
-                    pass
-
-            # Make sure the price has loaded
-            price_class_loading = "udi-circle-loader"
-            WebDriverWait(self.driver, 10).until_not(
-                EC.presence_of_element_located((By.CLASS_NAME, price_class_loading))
-            )
-
-            # Make sure the course is Free
-            if not self._check_price(course_name):
-                return UdemyStatus.EXPIRED.value
-
-            # Check if state/province element exists
-            billing_state_element_id = "billingAddressSecondarySelect"
-            billing_state_elements = self.driver.find_elements_by_id(
-                billing_state_element_id
-            )
-            if billing_state_elements:
-                # If we are here it means a state/province element exists and needs to be filled
-                # Open the dropdown menu
-                billing_state_elements[0].click()
-
-                # Pick the first element in the state/province dropdown
-                first_state_xpath = (
-                    "//select[@id='billingAddressSecondarySelect']//option[2]"
-                )
+            if not self._check_enrolled(course_name):
                 element_present = EC.presence_of_element_located(
-                    (By.XPATH, first_state_xpath)
+                    (By.XPATH, buy_course_button_xpath)
                 )
                 WebDriverWait(self.driver, 10).until(element_present).click()
 
-            # Hit the final Enroll now button
-            enroll_button_is_clickable = EC.element_to_be_clickable(
-                (By.XPATH, enroll_button_xpath)
-            )
-            WebDriverWait(self.driver, 10).until(enroll_button_is_clickable).click()
+                # Enroll Now 2
+                enroll_button_xpath = "//div[starts-with(@class, 'checkout-button--checkout-button--container')]//button"
+                element_present = EC.presence_of_element_located(
+                    (
+                        By.XPATH,
+                        enroll_button_xpath,
+                    )
+                )
+                WebDriverWait(self.driver, 10).until(element_present)
+                print("Enrolled!")
+                # Check if zipcode exists before doing this
+                if self.settings.zip_code:
+                    # zipcode is only required in certain regions (e.g USA)
+                    try:
+                        element_present = EC.presence_of_element_located(
+                            (
+                                By.ID,
+                                "billingAddressSecondaryInput",
+                            )
+                        )
+                        WebDriverWait(self.driver, 5).until(element_present).send_keys(
+                            self.settings.zip_code
+                        )
+                        print("Zipcode entered")
+                        # After you put the zip code in, the page refreshes itself and disables the enroll button for a split
+                        # second.
+                        enroll_button_is_clickable = EC.element_to_be_clickable(
+                            (By.XPATH, enroll_button_xpath)
+                        )
+                        WebDriverWait(self.driver, 5).until(enroll_button_is_clickable)
+                        print("Enroll button is clickable")
+                    except (TimeoutException, NoSuchElementException):
+                        pass
 
-            # Wait for success page to load
-            success_element_class = (
-                "//div[contains(@class, 'success-alert-banner-container')]"
-            )
-            WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, success_element_class))
-            )
+                # Make sure the price has loaded
+                price_class_loading = "udi-circle-loader"
+                WebDriverWait(self.driver, 10).until_not(
+                    EC.presence_of_element_located((By.CLASS_NAME, price_class_loading))
+                )
 
-            logger.info(f"Successfully enrolled in: '{course_name}'")
-            self.stats.enrolled += 1
-            return UdemyStatus.ENROLLED.value
-        else:
-            return UdemyStatus.ALREADY_ENROLLED.value
+                # Make sure the course is Free
+                if not self._check_price(course_name):
+                    return UdemyStatus.EXPIRED.value
+
+                # Check if state/province element exists
+                billing_state_element_id = "billingAddressSecondarySelect"
+                billing_state_elements = self.driver.find_elements_by_id(
+                    billing_state_element_id
+                )
+                if billing_state_elements:
+                    # If we are here it means a state/province element exists and needs to be filled
+                    # Open the dropdown menu
+                    billing_state_elements[0].click()
+
+                    # Pick the first element in the state/province dropdown
+                    first_state_xpath = (
+                        "//select[@id='billingAddressSecondarySelect']//option[2]"
+                    )
+                    element_present = EC.presence_of_element_located(
+                        (By.XPATH, first_state_xpath)
+                    )
+                    WebDriverWait(self.driver, 10).until(element_present).click()
+
+                # Hit the final Enroll now button
+                enroll_button_is_clickable = EC.element_to_be_clickable(
+                    (By.XPATH, enroll_button_xpath)
+                )
+                WebDriverWait(self.driver, 10).until(enroll_button_is_clickable).click()
+
+                # Wait for success page to load
+                success_element_class = (
+                    "//div[contains(@class, 'success-alert-banner-container')]"
+                )
+                WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.XPATH, success_element_class))
+                )
+
+                logger.info(f"Successfully enrolled in: '{course_name}'")
+                self.stats.enrolled += 1
+                return UdemyStatus.ENROLLED.value
+            else:
+                return UdemyStatus.ALREADY_ENROLLED.value
 
     def _check_enrolled(self, course_name):
         add_to_cart_xpath = (
@@ -329,7 +332,7 @@ class UdemyActionsUI:
     def _check_languages(self, course_identifier):
         is_valid_language = True
         if self.settings.languages:
-            locale_xpath = "//div[@data-purpose='lead-course-locale']"
+            locale_xpath = "/html/body/div[1]/div[1]/div/div/main/div/div[3]/div/div/section/div/div[3]/div/div[2]/div[4]/div[1]"
             element_text = (
                 WebDriverWait(self.driver, 10)
                 .until(EC.presence_of_element_located((By.XPATH, locale_xpath)))

@@ -80,23 +80,23 @@ class UdemyStatus(Enum):
 class UdemyActions:
     LOGIN_URL = "https://ibm-learning.udemy.com/"
     MY_COURSES = (
-        "https://www.udemy.com/api-2.0/users/me/subscribed-courses/?ordering=-last_accessed&fields["
+        "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/?ordering=-last_accessed&fields["
         "course]=@min,enrollment_time,published_title,&fields[user]=@min"
     )
-    CHECKOUT_URL = "https://www.udemy.com/payment/checkout-submit/"
+    CHECKOUT_URL = "https://ibm-learning.udemy.com/payment/checkout-submit/"
     CHECK_PRICE = (
-        "https://www.udemy.com/api-2.0/course-landing-components/{}/me/?couponCode={"
+        "https://ibm-learning.udemy.com/api-2.0/course-landing-components/{}/me/?couponCode={"
         "}&components=price_text,deal_badge,discount_expiration"
     )
     COURSE_DETAILS = (
-        "https://www.udemy.com/api-2.0/courses/{}/?fields[course]=title,context_info,primary_category,"
+        "https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=title,context_info,primary_category,"
         "primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,"
         "num_subscribers"
     )
-    USER_DETAILS = "https://www.udemy.com/api-2.0/contexts/me/?me=True&Config=True"
+    USER_DETAILS = "https://ibm-learning.udemy.com/api-2.0/contexts/me/?me=True&Config=True"
 
     HEADERS = {
-        "origin": "https://www.udemy.com",
+        "origin": "https://ibm-learning.udemy.com/",
         "accept": "application/json, text/plain, */*",
         "accept-encoding": "gzip, deflate, br",
         "content-type": "application/json;charset=UTF-8",
@@ -522,3 +522,6 @@ class UdemyActions:
         """
         logger.info("Deleting cookie")
         os.remove(self._cookie_file)
+
+    def wait_for_course_to_finish(self, course_link):
+        pass

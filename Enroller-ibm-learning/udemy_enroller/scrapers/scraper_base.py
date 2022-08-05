@@ -11,6 +11,7 @@ from udemy_enroller.http import get
 from udemy_enroller.scrapers.base_scraper import BaseScraper
 from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 from selenium.webdriver.support import expected_conditions as EC
+
 logger = logging.getLogger("udemy_enroller")
 
 
@@ -30,7 +31,7 @@ class UdemyScraper(BaseScraper):
         self.max_pages = max_pages
 
     @BaseScraper.time_run
-    async def run(self) -> List:
+    async def run(self) -> List[str]:
         """
         Called to gather the udemy links
 
@@ -41,35 +42,44 @@ class UdemyScraper(BaseScraper):
             f"Page: {self.current_page} of {self.last_page} scraped from ibm-learning.udemy.com"
         )
         self.max_pages_reached()
-        return links
+        return links[1]
 
-    async def get_links(self) -> List:
+    async def get_links(self) -> tuple[List[str], List[str]]:
         """
         Scrape udemy links from ibm-learning.udemy.com
 
         :return: List of udemy course urls
         """
-        udemy_links = []
+
         self.current_page += 1
         # /home/my-courses/learning/?p=1
         coupons_data = await get(f"{self.DOMAIN}/home/my-courses/learning/?p={self.current_page}", driver=self.driver)
-        #print(coupons_data)
         soup = BeautifulSoup(coupons_data, "html.parser")
-        for course_card in soup.find_all("a"):
-            print(f"course card{course_card}")
-            url_end = course_card["href"].split("/")[-1]
+        # print(coupons_data)
+        try:
+            div_containing_rel_links = WebDriverWait(self.driver, 20).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, ".my-courses__course-card-grid"))
+            )
+            logger.info("Found the courses element")
+            # rel_links=BeautifulSoup(div_containing_rel_links.get_attribute("innerHTML"), "html.parser")
+            # udemy_links = self.get_relevant_links(rel_links)
+            # for counter, course in enumerate(udemy_links):
+            #     logger.debug(f"Received Link {counter + 1} : {course}")
 
-            complete_url = f"{self.DOMAIN}{course_card['href']}"
-            udemy_links.append(complete_url)
+            soup = self.driver.find_element_by_xpath("/html/body")
+            all_links = BeautifulSoup(soup.get_attribute("innerHTML"), "html.parser")
+            all_udemy_links = self.get_relevant_links(all_links)
+            for counter, course in enumerate(all_udemy_links):
+                logger.debug(f"All_links Received Link {counter + 1} : {course}")
 
-        for counter, course in enumerate(udemy_links):
-            logger.debug(f"Received Link {counter + 1} : {course}")
-        print("NOW GOING TO START THE FN ")
-        links = await self.gather_course_links_from_top(udemy_links)
-        print("FINISHEd THE FN ")
-        print("Printing the links")
-        for counter, course in enumerate(links):
-            logger.debug(f"Received Link {counter + 1} : {course}")
+        except TimeoutException:
+            raise TimeoutException("TimeoutException: Unable to find the main content element")
+
+        links_grp, links_crs = await self.gather_course_links_from_top(all_udemy_links)
+        for counter, course in enumerate(links_grp):
+            logger.debug(f"Received grp Link {counter + 1} : {course}")
+        for counter, course in enumerate(links_crs):
+            logger.debug(f"Received crs Link {counter + 1} : {course}")
         # if links:
         #     new_lins = await self.gather_udemy_course_links(links)
 
@@ -78,20 +88,34 @@ class UdemyScraper(BaseScraper):
 
         self.last_page = self._get_last_page()
 
-        return links
+        return links_grp, links_crs
 
-    async def gather_course_links_from_top(self, courses: List[str]):
+    def get_relevant_links(self, soup):
+        udemy_links = []
+        # url_end = course_card["href"].split("/")[-1]
+        for course_card in soup.find_all("a"):
+            if course_card.get("href") is not None:
+                complete_url = f"{self.DOMAIN}{course_card['href']}"
+                udemy_links.append(complete_url)
+
+        return udemy_links
+
+    async def gather_course_links_from_top(self, courses: List[str]) -> tuple:
         """
         Async fetching of the udemy course links from ibm-learning.udemy.com
 
         :param list courses: A list of ibm-learning.udemy.com course links we want to fetch the udemy links for
         :return: list of udemy links
         """
-        return [
-            link
-            for link in await asyncio.gather(*map(self.validate_courses_url, courses))
-            if link is not None
-        ]
+        list_of_grp = []
+        list_of_crs = []
+        for tuple in await asyncio.gather(*map(self.validate_courses_url, courses)):
+            if tuple[1] is not None :
+                if tuple[0] == 0:
+                    list_of_grp.append(tuple[1])
+                else:
+                    list_of_crs.append(tuple[1])
+        return list_of_grp, list_of_crs
 
     async def get_udemy_course_link(self, url: str) -> Coroutine[Any, Any, str | None]:
         """
@@ -121,7 +145,6 @@ class UdemyScraper(BaseScraper):
             if link is not None
         ]
 
-
     def _get_last_page(self) -> int:
         """
         Extract the last page number to scrape
@@ -129,8 +152,8 @@ class UdemyScraper(BaseScraper):
         :param self:
         :return: The last page number to scrape
         """
-        #find all the pagination numbers
-        max_page=0
+        # find all the pagination numbers
+        max_page = 0
         try:
             page_elements = WebDriverWait(self.driver, 10).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, ".pagination--pagination--Xzx5q"))
@@ -139,16 +162,14 @@ class UdemyScraper(BaseScraper):
         except TimeoutException:
             raise TimeoutException("TimeoutException: Unable to find the pagination element")
         soup = BeautifulSoup(page_elements.get_attribute("innerHTML"), "html.parser")
-        all_the_pages=soup.find_all("a")
+        all_the_pages = soup.find_all("a")
         for x in all_the_pages:
-            #print(f"printing text inside the <a> tags pag: {x.text}")
+            # print(f"printing text inside the <a> tags pag: {x.text}")
             try:
-                if int(x.text)>max_page:
-                    max_page=int(x.text)
+                if int(x.text) > max_page:
+                    max_page = int(x.text)
             except ValueError:
-                #logger.error("ValueError: Unable to convert the text to int")
+                # logger.error("ValueError: Unable to convert the text to int")
                 pass
 
         return max_page
-
-
