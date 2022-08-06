@@ -1,9 +1,11 @@
+import json
+import os
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import List
+from typing import List, Dict
 
 from price_parser import Price
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
@@ -15,6 +17,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from udemy_enroller.exceptions import LoginException, RobotException
 from udemy_enroller.logging import get_logger
 from udemy_enroller.settings import Settings
+from udemy_enroller.utils import get_app_dir
 
 logger = get_logger()
 
@@ -77,13 +80,13 @@ class UdemyActionsUI:
 
     DOMAIN = "https://ibm-learning.udemy.com/"
 
-    def __init__(self, driver: WebDriver, settings: Settings):
+    def __init__(self, driver: WebDriver, settings: Settings, cookie_file_name: str = ".cookie"):
         self.driver = driver
         self.settings = settings
         self.logged_in = False
         self.stats = RunStatistics()
         self.stats.start_time = datetime.utcnow()
-
+        self._cookie_file = os.path.join(get_app_dir(), cookie_file_name)
     def login(self, is_retry=False) -> None:
         """
         Login to your udemy account
@@ -93,109 +96,139 @@ class UdemyActionsUI:
         :return: None
         """
         if not self.logged_in:
-            self.driver.get(f"{self.DOMAIN}")
+            cookie_details = self._load_cookies()
 
-            # Prompt for email/password if we don't have them saved in settings
-            if self.settings.email is None:
-                self.settings.prompt_email()
-            if self.settings.password is None:
-                self.settings.prompt_password()
+            if cookie_details is None:
+                self.driver.get(f"{self.DOMAIN}")
 
-            try:
-                xpath_email = '//*[@id="credsDiv"]'
+                # Prompt for email/password if we don't have them saved in settings
+                if self.settings.email is None:
+                    self.settings.prompt_email()
+                if self.settings.password is None:
+                    self.settings.prompt_password()
+
                 try:
-                    button = WebDriverWait(self.driver, 10).until(
-                        EC.presence_of_element_located((By.XPATH, xpath_email))
-                    )
-                except TimeoutException:
-
-                    raise LoginException("Udemy user failed to identify w3id button")
-                button.click()
-                try:
-                    input_email = "user-name-input"
-                    button = WebDriverWait(self.driver, 10).until(
-                        EC.presence_of_element_located((By.ID, input_email))
-                    )
-                    button.click()
-                    email_element = self.driver.find_element_by_id(input_email)
-                    email_element.send_keys(self.settings.email)
-                    WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.NAME, "checkbox1_lbl"))
-                                                         )
-                    password_element = self.driver.find_element_by_name("password")
-                    password_element.send_keys(self.settings.password)
-                    remind_button = self.driver.find_element_by_name("checkbox1_lbl")
-                    remind_button.click()
-
-                    login_button = WebDriverWait(self.driver, 10).until(
-                        EC.element_to_be_clickable((By.ID, "login-button"))
-                        )
-
-                    login_button.click()
-                    #if
-                    #else
+                    xpath_email = '//*[@id="credsDiv"]'
                     try:
-                        one_timepasscodeinput = WebDriverWait(self.driver, 10).until(
-                            EC.presence_of_element_located((By.ID, "otp-input"))
+                        button = WebDriverWait(self.driver, 10).until(
+                            EC.presence_of_element_located((By.XPATH, xpath_email))
                         )
-                        if one_timepasscodeinput:
-                            input(
-                                "Solve otp insertion. Hit enter once solved "
-                            )
-                            try:
-                                submit_btn = self.driver.find_element_by_id("submit_btn")
-                                submit_btn.click()
-                            except NoSuchElementException:
-                                pass
                     except TimeoutException:
-                        logger.info("No otp found")
-                        pass
 
-                    ibm_learning_subm = WebDriverWait(self.driver, 30).until(
-                        EC.presence_of_element_located((By.ID, "ibm-learning"))
-                    )
-                    logger.info("Logged in to udemy, trying to retrieve button")
-                    self.logged_in = True
-                    my_learning=self.driver.find_elements_by_tag_name('span')
-                    for x in my_learning:
-                        if x.text.upper() == 'My Learning'.upper():
-                            x.click()
-                            break
+                        raise LoginException("Udemy user failed to identify w3id button")
+                    button.click()
+                    try:
+                        input_email = "user-name-input"
+                        button = WebDriverWait(self.driver, 10).until(
+                            EC.presence_of_element_located((By.ID, input_email))
+                        )
+                        button.click()
+                        email_element = self.driver.find_element_by_id(input_email)
+                        email_element.send_keys(self.settings.email)
+                        WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.NAME, "checkbox1_lbl"))
+                                                             )
+                        password_element = self.driver.find_element_by_name("password")
+                        password_element.send_keys(self.settings.password)
+                        remind_button = self.driver.find_element_by_name("checkbox1_lbl")
+                        remind_button.click()
+
+                        login_button = WebDriverWait(self.driver, 10).until(
+                            EC.element_to_be_clickable((By.ID, "login-button"))
+                            )
+
+                        login_button.click()
+                        #if
+                        #else
+                        try:
+                            one_timepasscodeinput = WebDriverWait(self.driver, 10).until(
+                                EC.presence_of_element_located((By.ID, "otp-input"))
+                            )
+                            if one_timepasscodeinput:
+                                input(
+                                    "Solve otp insertion. Hit enter once solved "
+                                )
+                                try:
+                                    submit_btn = self.driver.find_element_by_id("submit_btn")
+                                    submit_btn.click()
+                                except NoSuchElementException:
+                                    pass
+                        except TimeoutException:
+                            logger.info("No otp found")
+                            pass
+                        cookie_details=self.driver.get_cookies()
+                        refactored_cookies=[]
+                        for cookie in cookie_details:
+                            if cookie.get('name') == 'csrftoken' \
+                                    or cookie.get('name') == 'client_id'\
+                                    or cookie.get('name') == 'access_token':
+                                refactored_cookies.append(cookie)
+                        print(refactored_cookies)
+                        self._cache_cookies(refactored_cookies)
+                        #check if file is empty
+                        if os.stat(self._cookie_file).st_size == 0:
+                            raise LoginException("Udemy user failed to login")
+
+                        ibm_learning_subm = WebDriverWait(self.driver, 30).until(
+                            EC.presence_of_element_located((By.ID, "ibm-learning"))
+                        )
+                        logger.info("Logged in to udemy, trying to retrieve button")
+                        self.logged_in = True
+                        my_learning=self.driver.find_elements_by_tag_name('span')
+                        for x in my_learning:
+                            if x.text.upper() == 'My Learning'.upper():
+                                x.click()
+                                break
 
 
 
-                except TimeoutException:
+                    except TimeoutException:
 
-                    raise LoginException("Udemy user failed to login")
+                        raise LoginException("Udemy user failed to login")
 
-            except NoSuchElementException as e:
-                is_robot = self._check_if_robot()
-                if is_robot and not is_retry:
-                    input(
-                        "Before login. Please solve the captcha before proceeding. Hit enter once solved "
-                    )
-                    self.login(is_retry=True)
-                    return
-                if is_robot and is_retry:
-                    raise RobotException("I am a bot!")
-                raise e
-            else:
-                user_dropdown_xpath = "//a[@data-purpose='user-dropdown']"
-                try:
-                    WebDriverWait(self.driver, 10).until(
-                        EC.presence_of_element_located((By.XPATH, user_dropdown_xpath))
-                    )
-                except TimeoutException:
+                except NoSuchElementException as e:
                     is_robot = self._check_if_robot()
                     if is_robot and not is_retry:
                         input(
-                            "After login. Please solve the captcha before proceeding. Hit enter once solved "
+                            "Before login. Please solve the captcha before proceeding. Hit enter once solved "
                         )
-                        if self._check_if_robot():
-                            raise RobotException("I am a bot!")
-                        self.logged_in = True
+                        self.login(is_retry=True)
                         return
-                    raise LoginException("Udemy user failed to login")
-            self.logged_in = True
+                    if is_robot and is_retry:
+                        raise RobotException("I am a bot!")
+                    raise e
+                else:
+                    user_dropdown_xpath = "//a[@data-purpose='user-dropdown']"
+                    try:
+                        WebDriverWait(self.driver, 10).until(
+                            EC.presence_of_element_located((By.XPATH, user_dropdown_xpath))
+                        )
+                    except TimeoutException:
+                        is_robot = self._check_if_robot()
+                        if is_robot and not is_retry:
+                            input(
+                                "After login. Please solve the captcha before proceeding. Hit enter once solved "
+                            )
+                            if self._check_if_robot():
+                                raise RobotException("I am a bot!")
+                            self.logged_in = True
+                            return
+                        raise LoginException("Udemy user failed to login")
+                self.logged_in = True
+
+            else:
+                dummy_url = '/404error'
+                self.driver.get(f"{self.DOMAIN+dummy_url}")
+                for cookie in cookie_details:
+                    print(cookie)
+                    self.driver.add_cookie(cookie)
+                self.driver.get(f"{self.DOMAIN}")
+
+                self.logged_in = True
+                my_learning=self.driver.find_elements_by_tag_name('span')
+                for x in my_learning:
+                    if x.text.upper() == 'My Learning'.upper():
+                        x.click()
+                        break
 
     def enroll(self, url: str) -> str:
         """
@@ -204,6 +237,7 @@ class UdemyActionsUI:
         :param str url: URL of the course to redeem
         :return: A string detailing course status
         """
+
         self.driver.get(url)
 
         course_name = self.driver.title
@@ -329,6 +363,41 @@ class UdemyActionsUI:
             return True
         return False
 
+    def _load_cookies(self) -> Dict:
+        """
+        Loads existing cookie file
+
+        :return:
+        """
+        cookies = None
+
+        if os.path.isfile(self._cookie_file):
+            logger.info("Loading cookie from file")
+            with open(self._cookie_file) as f:
+                cookies = json.loads(f.read())
+        else:
+            logger.info("No cookie available")
+        return cookies
+
+    def _cache_cookies(self, cookies: List) -> None:
+        """
+        Caches cookies for future logins
+
+        :param cookies:
+        :return:
+        """
+        logger.info("Caching cookie for future use")
+        with open(self._cookie_file, "w") as f:
+            json.dump(cookies, f)
+
+    def _delete_cookies(self) -> None:
+        """
+        Remove existing cookie file
+
+        :return:
+        """
+        logger.info("Deleting cookie")
+        os.remove(self._cookie_file)
     def _check_languages(self, course_identifier):
         is_valid_language = True
         if self.settings.languages:

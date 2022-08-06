@@ -164,6 +164,7 @@ class UdemyActions:
                 }
                 self._cache_cookies(cookie_details)
 
+
         bearer_token = f"Bearer {cookie_details['access_token']}"
         self.session.headers = self.HEADERS
         self.session.headers.update(

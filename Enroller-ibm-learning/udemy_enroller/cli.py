@@ -112,7 +112,7 @@ def parse_args() -> Namespace:
         required=False,
         type=str,
         choices=ALL_VALID_BROWSER_STRINGS,
-        # default="chrome",
+        default="chrome",
         help="Browser to use for Udemy Enroller",
     )
     parser.add_argument(
