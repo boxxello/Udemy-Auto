@@ -10,6 +10,7 @@ import requests
 from bs4 import BeautifulSoup
 from cloudscraper import create_scraper
 
+
 from udemy_enroller.logging import get_logger
 from udemy_enroller.settings import Settings
 from udemy_enroller.utils import get_app_dir
@@ -102,7 +103,7 @@ class UdemyActions:
         "content-type": "application/json;charset=UTF-8",
         "x-requested-with": "XMLHttpRequest",
         "x-checkout-version": "2",
-        "referer": "https://www.udemy.com/",
+        "referer": "https://ibm-learning.udemy.com/",
     }
 
     def __init__(self, settings: Settings, cookie_file_name: str = ".cookie"):
@@ -147,7 +148,7 @@ class UdemyActions:
             }
             self.udemy_scraper.headers.update({"Referer": self.LOGIN_URL})
             auth_response = self.udemy_scraper.post(
-                self.LOGIN_URL, data=_form_data, allow_redirects=False
+                self.LOGIN_URL, data=_form_data, verify=False
             )
             if auth_response.status_code != 302:
                 logger.debug(

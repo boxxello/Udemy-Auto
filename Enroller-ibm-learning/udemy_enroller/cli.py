@@ -75,8 +75,9 @@ def run(
     """
     settings = Settings(delete_settings, delete_cookie)
     print("ci arrivo")
-    dm = DriverManager(browser=browser, is_ci_build=settings.is_ci_build)
+
     if browser:
+        dm = DriverManager(browser=browser, is_ci_build=settings.is_ci_build)
         print("ci arrivo browser")
         redeem_courses_ui(
             dm.driver,
@@ -87,6 +88,8 @@ def run(
             max_pages,
         )
     else:
+        browser="chrome"
+        dm = DriverManager(browser=browser, is_ci_build=settings.is_ci_build)
         print("ci arrivo no browser")
         redeem_courses(
             dm.driver,
@@ -109,7 +112,7 @@ def parse_args() -> Namespace:
         required=False,
         type=str,
         choices=ALL_VALID_BROWSER_STRINGS,
-        default="chrome",
+        # default="chrome",
         help="Browser to use for Udemy Enroller",
     )
     parser.add_argument(
