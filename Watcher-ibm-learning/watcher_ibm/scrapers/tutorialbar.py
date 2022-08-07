@@ -4,10 +4,10 @@ from typing import List
 
 from bs4 import BeautifulSoup
 
-from udemy_enroller.http import get
-from udemy_enroller.scrapers.base_scraper import BaseScraper
+from watcher_ibm.http import get
+from watcher_ibm.scrapers.base_scraper import BaseScraper
 
-logger = logging.getLogger("udemy_enroller")
+logger = logging.getLogger("watcher_ibm")
 
 
 class TutorialBarScraper(BaseScraper):

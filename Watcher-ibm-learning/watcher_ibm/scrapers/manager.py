@@ -2,10 +2,10 @@ import asyncio
 from functools import reduce
 from typing import List
 
-from udemy_enroller.scrapers.discudemy import DiscUdemyScraper
-from udemy_enroller.scrapers.scraper_base import UdemyScraper
+from watcher_ibm.scrapers.discudemy import DiscUdemyScraper
+from watcher_ibm.scrapers.scraper_base import UdemyScraper
 
-from udemy_enroller.scrapers.tutorialbar import TutorialBarScraper
+from watcher_ibm.scrapers.tutorialbar import TutorialBarScraper
 
 
 class ScraperManager:

@@ -7,12 +7,12 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 
-from udemy_enroller.http import get
-from udemy_enroller.scrapers.base_scraper import BaseScraper
+from watcher_ibm.http import get
+from watcher_ibm.scrapers.base_scraper import BaseScraper
 from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 from selenium.webdriver.support import expected_conditions as EC
 
-logger = logging.getLogger("udemy_enroller")
+logger = logging.getLogger("watcher_ibm")
 
 
 class UdemyScraper(BaseScraper):

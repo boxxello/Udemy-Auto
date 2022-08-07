@@ -1,4 +1,4 @@
-from udemy_enroller.cli import main
+from watcher_ibm.cli import main
 
 if __name__ == "__main__":
     main()

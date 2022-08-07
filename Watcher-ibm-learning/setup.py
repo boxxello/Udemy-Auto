@@ -41,7 +41,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "udemy_enroller=udemy_enroller.cli:main",
+            "watcher_ibm=watcher_ibm.cli:main",
         ],
     },
 )

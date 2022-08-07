@@ -7,6 +7,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import List, Dict
 
+import requests
 from price_parser import Price
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
@@ -14,10 +15,10 @@ from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from udemy_enroller.exceptions import LoginException, RobotException
-from udemy_enroller.logging import get_logger
-from udemy_enroller.settings import Settings
-from udemy_enroller.utils import get_app_dir
+from watcher_ibm.exceptions import LoginException, RobotException
+from watcher_ibm.logging import get_logger
+from watcher_ibm.settings import Settings
+from watcher_ibm.utils import get_app_dir
 
 logger = get_logger()
 
@@ -79,14 +80,19 @@ class UdemyActionsUI:
     """
 
     DOMAIN = "https://ibm-learning.udemy.com/"
+    REQUEST_URL_NUM_LECTURES="https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=title,num_lectures,completion_ratio"
+    REQUEST_URL_NUM_QUIZZES="https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=num_quizzes"
+    REQUEST_URL_URL= "https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=url"
 
     def __init__(self, driver: WebDriver, settings: Settings, cookie_file_name: str = ".cookie"):
         self.driver = driver
         self.settings = settings
         self.logged_in = False
         self.stats = RunStatistics()
+        self.session = requests.Session()
         self.stats.start_time = datetime.utcnow()
         self._cookie_file = os.path.join(get_app_dir(), cookie_file_name)
+
     def login(self, is_retry=False) -> None:
         """
         Login to your udemy account
@@ -134,11 +140,11 @@ class UdemyActionsUI:
 
                         login_button = WebDriverWait(self.driver, 10).until(
                             EC.element_to_be_clickable((By.ID, "login-button"))
-                            )
+                        )
 
                         login_button.click()
-                        #if
-                        #else
+                        # if
+                        # else
                         try:
                             one_timepasscodeinput = WebDriverWait(self.driver, 10).until(
                                 EC.presence_of_element_located((By.ID, "otp-input"))
@@ -155,34 +161,23 @@ class UdemyActionsUI:
                         except TimeoutException:
                             logger.info("No otp found")
                             pass
-                        cookie_details=self.driver.get_cookies()
-                        refactored_cookies=[]
+                        cookie_details = self.driver.get_cookies()
+                        refactored_cookies = []
                         for cookie in cookie_details:
                             if cookie.get('name') == 'csrftoken' \
-                                    or cookie.get('name') == 'client_id'\
+                                    or cookie.get('name') == 'client_id' \
                                     or cookie.get('name') == 'access_token':
                                 refactored_cookies.append(cookie)
                         print(refactored_cookies)
                         self._cache_cookies(refactored_cookies)
-                        #check if file is empty
+                        # check if file is empty
                         if os.stat(self._cookie_file).st_size == 0:
                             raise LoginException("Udemy user failed to login")
 
-                        ibm_learning_subm = WebDriverWait(self.driver, 30).until(
-                            EC.presence_of_element_located((By.ID, "ibm-learning"))
-                        )
-                        logger.info("Logged in to udemy, trying to retrieve button")
-                        self.logged_in = True
-                        my_learning=self.driver.find_elements_by_tag_name('span')
-                        for x in my_learning:
-                            if x.text.upper() == 'My Learning'.upper():
-                                x.click()
-                                break
 
 
 
                     except TimeoutException:
-
                         raise LoginException("Udemy user failed to login")
 
                 except NoSuchElementException as e:
@@ -213,22 +208,31 @@ class UdemyActionsUI:
                             self.logged_in = True
                             return
                         raise LoginException("Udemy user failed to login")
-                self.logged_in = True
+
 
             else:
                 dummy_url = '/404error'
-                self.driver.get(f"{self.DOMAIN+dummy_url}")
+                self.driver.get(f"{self.DOMAIN + dummy_url}")
                 for cookie in cookie_details:
                     print(cookie)
                     self.driver.add_cookie(cookie)
                 self.driver.get(f"{self.DOMAIN}")
 
+            try:
+                ibm_learning_subm = WebDriverWait(self.driver, 30).until(
+                    EC.presence_of_element_located((By.ID, "ibm-learning"))
+                )
+                logger.info("Logged in to udemy, trying to retrieve button")
                 self.logged_in = True
-                my_learning=self.driver.find_elements_by_tag_name('span')
+                my_learning = self.driver.find_elements_by_tag_name('span')
                 for x in my_learning:
                     if x.text.upper() == 'My Learning'.upper():
                         x.click()
                         break
+
+                self.logged_in = True
+            except TimeoutException:
+                raise LoginException("Udemy user failed to login")
 
     def enroll(self, url: str) -> str:
         """
@@ -260,7 +264,7 @@ class UdemyActionsUI:
         except TimeoutException:
             return UdemyStatus.ALREADY_ENROLLED.value
         else:
-        # Check if already enrolled. If add to cart is available we have not yet enrolled
+            # Check if already enrolled. If add to cart is available we have not yet enrolled
             if not self._check_enrolled(course_name):
                 element_present = EC.presence_of_element_located(
                     (By.XPATH, buy_course_button_xpath)
@@ -349,6 +353,18 @@ class UdemyActionsUI:
                 return UdemyStatus.ENROLLED.value
             else:
                 return UdemyStatus.ALREADY_ENROLLED.value
+    def get_all_links_from_page(self, url: str=None) -> List[str]:
+        """
+        Gets all the links from a page
+        :param str url: URL of the page to get links from
+        :return: A list of links
+        """
+        if url is not None:
+            self.driver.get(url)
+
+        links = self.driver.find_elements_by_tag_name('a')
+        links = [link.get_attribute('href') for link in links]
+        return links
 
     def _check_enrolled(self, course_name):
         add_to_cart_xpath = (
@@ -398,6 +414,7 @@ class UdemyActionsUI:
         """
         logger.info("Deleting cookie")
         os.remove(self._cookie_file)
+
     def _check_languages(self, course_identifier):
         is_valid_language = True
         if self.settings.languages:

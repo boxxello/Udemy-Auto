@@ -3,9 +3,9 @@ import logging
 from argparse import Namespace
 from typing import Tuple, Union
 
-from udemy_enroller import ALL_VALID_BROWSER_STRINGS, DriverManager, Settings
-from udemy_enroller.logging import get_logger
-from udemy_enroller.runner import redeem_courses_ui, redeem_courses
+from watcher_ibm import ALL_VALID_BROWSER_STRINGS, DriverManager, Settings
+from watcher_ibm.logging import get_logger
+from watcher_ibm.runner import redeem_courses_ui, redeem_courses
 
 logger = get_logger()
 

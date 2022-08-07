@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Optional
 
-logger = logging.getLogger("udemy_enroller")
+logger = logging.getLogger("watcher_ibm")
 
 
 class ScraperStates(Enum):

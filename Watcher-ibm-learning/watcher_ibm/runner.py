@@ -9,7 +9,7 @@ from selenium.common.exceptions import (
     WebDriverException,
 )
 
-from udemy_enroller import (
+from watcher_ibm import (
     ScraperManager,
     Settings,
     UdemyActions,
@@ -17,7 +17,7 @@ from udemy_enroller import (
     UdemyStatus,
     exceptions,
 )
-from udemy_enroller.logging import get_logger
+from watcher_ibm.logging import get_logger
 
 logger = get_logger()
 
@@ -122,13 +122,15 @@ def _redeem_courses_ui(
             ):  # Cast to set to remove duplicate links
                 try:
                     status = udemy_actions.enroll(course_link)
-                    if status == UdemyStatus.ENROLLED.value:
-                        # Try to avoid udemy throttling by sleeping for 1-5 seconds
+                    if status == UdemyStatus.ENROLLED.value or status == UdemyStatus.ALREADY_ENROLLED.value:
+
                         sleep_time = random.choice(range(1, 5))
                         logger.debug(
                             f"Sleeping for {sleep_time} seconds between enrolments"
                         )
                         time.sleep(sleep_time)
+                        get_all_links_from_page = udemy_actions.get_all_links_from_page()
+                        print(get_all_links_from_page)
                 except NoSuchElementException as e:
                     logger.error(f"No such element: {e}")
                 except TimeoutException:

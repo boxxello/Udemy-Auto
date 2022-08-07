@@ -11,9 +11,9 @@ from bs4 import BeautifulSoup
 from cloudscraper import create_scraper
 
 
-from udemy_enroller.logging import get_logger
-from udemy_enroller.settings import Settings
-from udemy_enroller.utils import get_app_dir
+from watcher_ibm.logging import get_logger
+from watcher_ibm.settings import Settings
+from watcher_ibm.utils import get_app_dir
 
 logger = get_logger()
 
