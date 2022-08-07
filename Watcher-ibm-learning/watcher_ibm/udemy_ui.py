@@ -83,7 +83,17 @@ class UdemyActionsUI:
     REQUEST_URL_NUM_LECTURES="https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=title,num_lectures,completion_ratio"
     REQUEST_URL_NUM_QUIZZES="https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=num_quizzes"
     REQUEST_URL_URL= "https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=url"
-
+    REQUEST_LECTURES="https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/{}/lectures"
+    REQUEST_LECTURES_NEXT="https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/673024/lectures/?page=4"
+    HEADERS = {
+        "origin": "https://ibm-learning.udemy.com/",
+        "accept": "application/json, text/plain, */*",
+        "accept-encoding": "gzip, deflate, br",
+        "content-type": "application/json;charset=UTF-8",
+        "x-requested-with": "XMLHttpRequest",
+        "x-checkout-version": "2",
+        "referer": "https://ibm-learning.udemy.com/",
+    }
     def __init__(self, driver: WebDriver, settings: Settings, cookie_file_name: str = ".cookie"):
         self.driver = driver
         self.settings = settings
@@ -170,6 +180,9 @@ class UdemyActionsUI:
                                 refactored_cookies.append(cookie)
                         print(refactored_cookies)
                         self._cache_cookies(refactored_cookies)
+
+
+
                         # check if file is empty
                         if os.stat(self._cookie_file).st_size == 0:
                             raise LoginException("Udemy user failed to login")
@@ -214,7 +227,6 @@ class UdemyActionsUI:
                 dummy_url = '/404error'
                 self.driver.get(f"{self.DOMAIN + dummy_url}")
                 for cookie in cookie_details:
-                    print(cookie)
                     self.driver.add_cookie(cookie)
                 self.driver.get(f"{self.DOMAIN}")
 
@@ -233,6 +245,29 @@ class UdemyActionsUI:
                 self.logged_in = True
             except TimeoutException:
                 raise LoginException("Udemy user failed to login")
+
+            # for cookie in self._load_cookies():
+            #     self.session.cookies.set(cookie['name'], cookie['value'])
+            for cookie in self.driver.get_cookies():
+                self.session.cookies.set(cookie['name'], cookie['value'])
+            bearer_token=None
+
+            for x in self._load_cookies():
+                bearer_token= x if x.get('name')=='access_token' else bearer_token
+            print(f"printing bearer token {bearer_token}")
+
+            self.session.headers = self.HEADERS
+            if bearer_token is not None:
+                bearer_string = f"Bearer {bearer_token['value']}"
+                self.session.headers.update(
+                    {
+                        "authorization": bearer_string,
+                        "x-udemy-authorization": bearer_string,
+                        "x-csrftoken": bearer_token['value'],
+                    }
+                )
+
+            print(self.session.cookies)
 
     def enroll(self, url: str) -> str:
         """
@@ -353,6 +388,15 @@ class UdemyActionsUI:
                 return UdemyStatus.ENROLLED.value
             else:
                 return UdemyStatus.ALREADY_ENROLLED.value
+    def get_all_lectures_id(self, number_course_id: int) -> List[str]:
+        """
+        Returns a list of all the lecture ids in the course
+        :return: List of lecture ids
+        """
+
+        return requests.get(self.REQUEST_LECTURES.format(number_course_id)).json()
+
+
     def get_all_links_from_page(self, url: str=None) -> List[str]:
         """
         Gets all the links from a page

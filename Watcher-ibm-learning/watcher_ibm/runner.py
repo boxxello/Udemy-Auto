@@ -2,7 +2,7 @@ import asyncio
 import random
 import time
 from typing import Union
-
+import regex
 from selenium.common.exceptions import (
     NoSuchElementException,
     TimeoutException,
@@ -124,13 +124,15 @@ def _redeem_courses_ui(
                     status = udemy_actions.enroll(course_link)
                     if status == UdemyStatus.ENROLLED.value or status == UdemyStatus.ALREADY_ENROLLED.value:
 
-                        sleep_time = random.choice(range(1, 5))
-                        logger.debug(
-                            f"Sleeping for {sleep_time} seconds between enrolments"
-                        )
-                        time.sleep(sleep_time)
-                        get_all_links_from_page = udemy_actions.get_all_links_from_page()
-                        print(get_all_links_from_page)
+                        # sleep_time = random.choice(range(1, 5))
+                        # logger.debug(
+                        #     f"Sleeping for {sleep_time} seconds between enrolments"
+                        # )
+                        # time.sleep(sleep_time)
+                        number_extr=extract_cs_id(course_link)
+                        print(udemy_actions.get_all_lectures_id(number_extr))
+
+
                 except NoSuchElementException as e:
                     logger.error(f"No such element: {e}")
                 except TimeoutException:
@@ -155,7 +157,13 @@ def _redeem_courses_ui(
             udemy_actions.stats.table()
             logger.info("All scrapers complete")
             return
+def extract_cs_id(url:str)->int:
 
+
+    pattern = r"^https:\/\/(www\.)?ibm-learning\.udemy\.com\/course-dashboard-redirect\/\?course_id=(?P<extract_num>\d+)$"
+    matches = regex.search(pattern, url, regex.M)
+    numb=int(matches.group('extract_num'))
+    return numb
 
 def redeem_courses_ui(
         driver,
