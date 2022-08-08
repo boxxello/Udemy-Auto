@@ -129,8 +129,10 @@ def _redeem_courses_ui(
                         #     f"Sleeping for {sleep_time} seconds between enrolments"
                         # )
                         # time.sleep(sleep_time)
-                        number_extr=extract_cs_id(course_link)
-                        print(udemy_actions.get_all_lectures_id(number_extr))
+                        list_of_lectures_id=udemy_actions._get_all_lectures_id(course_link)
+                        print(f"Printing list of lectures of {course_link}: {list_of_lectures_id}")
+
+
 
 
                 except NoSuchElementException as e:
@@ -157,13 +159,8 @@ def _redeem_courses_ui(
             udemy_actions.stats.table()
             logger.info("All scrapers complete")
             return
-def extract_cs_id(url:str)->int:
 
 
-    pattern = r"^https:\/\/(www\.)?ibm-learning\.udemy\.com\/course-dashboard-redirect\/\?course_id=(?P<extract_num>\d+)$"
-    matches = regex.search(pattern, url, regex.M)
-    numb=int(matches.group('extract_num'))
-    return numb
 
 def redeem_courses_ui(
         driver,

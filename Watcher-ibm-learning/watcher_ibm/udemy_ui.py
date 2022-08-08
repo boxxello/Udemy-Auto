@@ -9,6 +9,7 @@ from typing import List, Dict
 
 import requests
 from price_parser import Price
+from regex import regex
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver, WebElement
@@ -388,13 +389,62 @@ class UdemyActionsUI:
                 return UdemyStatus.ENROLLED.value
             else:
                 return UdemyStatus.ALREADY_ENROLLED.value
-    def get_all_lectures_id(self, number_course_id: int) -> List[str]:
+
+    def _find_all_lectures(self, number_extr)->List[str]:
+        resp_json_json = self._get_course_links_lectures(number_extr)
+        next_links_lst = []
+        extracted_link = resp_json_json['next']
+
+        next_links_lst.append(extracted_link)
+        flag = True
+
+        while flag:
+            # get next from json
+            if extracted_link is not None:
+                if not extracted_link in next_links_lst:
+
+                    next_links_lst.append(extracted_link)
+                    response_got = self._resp_from_url_with_session(extracted_link)
+                    extracted_link = response_got['next']
+                else:
+                    flag = False
+            else:
+                flag = False
+        return next_links_lst
+
+    @staticmethod
+    def extract_cs_id(url: str) -> int:
+        pattern = r"^https:\/\/(www\.)?ibm-learning\.udemy\.com\/course-dashboard-redirect\/\?course_id=(?P<extract_num>\d+)$"
+        matches = regex.search(pattern, url, regex.M)
+        numb = int(matches.group('extract_num'))
+        return numb
+
+    def _get_all_next_api_pages(self, course_link)->List[str]:
+        number_extr = self.extract_cs_id(course_link)
+        return self._find_all_lectures(number_extr)
+
+    def _get_all_lectures_id(self, course_link)->List[int]:
+        list_of_links=self._get_all_next_api_pages(course_link)
+        next_lectures_lst = []
+        for link in list_of_links:
+            print(link)
+            resp_json_json = self._resp_from_url_with_session(link)
+            for lecture in resp_json_json['results']:
+                next_lectures_lst.append(lecture['id'])
+        return next_lectures_lst
+
+
+
+    def _resp_from_url_with_session(self, url:str):
+        return self.session.get(url).json()
+
+    def _get_course_links_lectures(self, number_course_id: int) ->json:
         """
         Returns a list of all the lecture ids in the course
         :return: List of lecture ids
         """
 
-        return requests.get(self.REQUEST_LECTURES.format(number_course_id)).json()
+        return self.session.get(self.REQUEST_LECTURES.format(number_course_id)).json()
 
 
     def get_all_links_from_page(self, url: str=None) -> List[str]:
