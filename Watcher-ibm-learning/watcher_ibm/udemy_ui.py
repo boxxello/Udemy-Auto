@@ -391,10 +391,11 @@ class UdemyActionsUI:
                 return UdemyStatus.ALREADY_ENROLLED.value
 
     def _find_all_lectures(self, number_extr)->List[str]:
-        resp_json_json = self._get_course_links_lectures(number_extr)
+        first_link_to=self.REQUEST_LECTURES.format(number_extr)
+        resp_json_json=self._resp_from_url_with_session(first_link_to)
         next_links_lst = []
+        next_links_lst.append(first_link_to)
         extracted_link = resp_json_json['next']
-
         next_links_lst.append(extracted_link)
         flag = True
 
@@ -427,7 +428,6 @@ class UdemyActionsUI:
         list_of_links=self._get_all_next_api_pages(course_link)
         next_lectures_lst = []
         for link in list_of_links:
-            print(link)
             resp_json_json = self._resp_from_url_with_session(link)
             for lecture in resp_json_json['results']:
                 next_lectures_lst.append(lecture['id'])
