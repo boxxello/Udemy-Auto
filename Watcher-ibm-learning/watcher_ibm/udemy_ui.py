@@ -81,11 +81,11 @@ class UdemyActionsUI:
     """
 
     DOMAIN = "https://ibm-learning.udemy.com/"
-    REQUEST_URL_NUM_LECTURES="https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=title,num_lectures,completion_ratio"
-    REQUEST_URL_NUM_QUIZZES="https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=num_quizzes"
-    REQUEST_URL_URL= "https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=url"
-    REQUEST_LECTURES="https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/{}/lectures"
-    REQUEST_LECTURES_NEXT="https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/673024/lectures/?page=4"
+    REQUEST_URL_NUM_LECTURES = "https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=title,num_lectures,completion_ratio"
+    REQUEST_URL_NUM_QUIZZES = "https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=num_quizzes"
+    REQUEST_URL_URL = "https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=url"
+    REQUEST_LECTURES = "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/{}/lectures"
+    REQUEST_LECTURES_NEXT = "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/673024/lectures/?page=4"
     HEADERS = {
         "origin": "https://ibm-learning.udemy.com/",
         "accept": "application/json, text/plain, */*",
@@ -95,6 +95,12 @@ class UdemyActionsUI:
         "x-checkout-version": "2",
         "referer": "https://ibm-learning.udemy.com/",
     }
+    COURSE_DETAILS = (
+        "https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=title,context_info,primary_category,"
+        "primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,"
+        "num_subscribers"
+    )
+
     def __init__(self, driver: WebDriver, settings: Settings, cookie_file_name: str = ".cookie"):
         self.driver = driver
         self.settings = settings
@@ -182,8 +188,6 @@ class UdemyActionsUI:
                         print(refactored_cookies)
                         self._cache_cookies(refactored_cookies)
 
-
-
                         # check if file is empty
                         if os.stat(self._cookie_file).st_size == 0:
                             raise LoginException("Udemy user failed to login")
@@ -251,11 +255,11 @@ class UdemyActionsUI:
             #     self.session.cookies.set(cookie['name'], cookie['value'])
             for cookie in self.driver.get_cookies():
                 self.session.cookies.set(cookie['name'], cookie['value'])
-            bearer_token=None
+            bearer_token = None
 
             for x in self._load_cookies():
-                bearer_token= x if x.get('name')=='access_token' else bearer_token
-            print(f"printing bearer token {bearer_token}")
+                bearer_token = x if x.get('name') == 'access_token' else bearer_token
+            logger.info(f"printing bearer token {bearer_token}")
 
             self.session.headers = self.HEADERS
             if bearer_token is not None:
@@ -268,8 +272,6 @@ class UdemyActionsUI:
                     }
                 )
 
-            print(self.session.cookies)
-
     def enroll(self, url: str) -> str:
         """
         Redeems the course url passed in
@@ -281,14 +283,15 @@ class UdemyActionsUI:
         self.driver.get(url)
 
         course_name = self.driver.title
-        print("arrivo almeno qua1")
+
         if not self._check_languages(course_name):
             return UdemyStatus.UNWANTED_LANGUAGE.value
 
-        print("arrivo almeno qua2")
+        logger.info("Check languages done")
         if not self._check_categories(course_name):
             return UdemyStatus.UNWANTED_CATEGORY.value
-        print("arrivo almeno qua3")
+        logger.info("Check Categories done")
+
         try:
             # check if element is present before clicking
             buy_course_button_xpath = "//button[@data-purpose='buy-this-course-button']"
@@ -390,9 +393,8 @@ class UdemyActionsUI:
             else:
                 return UdemyStatus.ALREADY_ENROLLED.value
 
-    def _find_all_lectures(self, number_extr)->List[str]:
-        first_link_to=self.REQUEST_LECTURES.format(number_extr)
-        resp_json_json=self._resp_from_url_with_session(first_link_to)
+    def _find_all_lectures(self, first_link_to) -> List[str]:
+        resp_json_json = self._resp_from_url_with_session(first_link_to)
         next_links_lst = []
         next_links_lst.append(first_link_to)
         extracted_link = resp_json_json['next']
@@ -420,12 +422,9 @@ class UdemyActionsUI:
         numb = int(matches.group('extract_num'))
         return numb
 
-    def _get_all_next_api_pages(self, course_link)->List[str]:
-        number_extr = self.extract_cs_id(course_link)
-        return self._find_all_lectures(number_extr)
+    def _get_all_lectures_id(self, course_link) -> List[int]:
 
-    def _get_all_lectures_id(self, course_link)->List[int]:
-        list_of_links=self._get_all_next_api_pages(course_link)
+        list_of_links = self._find_all_lectures(course_link)
         next_lectures_lst = []
         for link in list_of_links:
             resp_json_json = self._resp_from_url_with_session(link)
@@ -433,12 +432,10 @@ class UdemyActionsUI:
                 next_lectures_lst.append(lecture['id'])
         return next_lectures_lst
 
-
-
-    def _resp_from_url_with_session(self, url:str):
+    def _resp_from_url_with_session(self, url: str):
         return self.session.get(url).json()
 
-    def _get_course_links_lectures(self, number_course_id: int) ->json:
+    def _get_course_links_lectures(self, number_course_id: int) -> json:
         """
         Returns a list of all the lecture ids in the course
         :return: List of lecture ids
@@ -446,8 +443,7 @@ class UdemyActionsUI:
 
         return self.session.get(self.REQUEST_LECTURES.format(number_course_id)).json()
 
-
-    def get_all_links_from_page(self, url: str=None) -> List[str]:
+    def get_all_links_from_page(self, url: str = None) -> List[str]:
         """
         Gets all the links from a page
         :param str url: URL of the page to get links from
@@ -602,3 +598,37 @@ class UdemyActionsUI:
         except NoSuchElementException:
             is_robot = False
         return is_robot
+
+    def _get_course_link_from_redirect(self, course_link) -> tuple:
+        number_extr = self.extract_cs_id(course_link)
+        return self.REQUEST_LECTURES.format(number_extr), number_extr
+
+    def _get_completition_course_link(self, course_link):
+        number_extr = self.extract_cs_id(course_link)
+        return self.REQUEST_URL_NUM_LECTURES.format(number_extr)
+
+    def _get_completetion_ratio(self, course_link):
+        response_details = self.session.get(course_link).json()
+        return response_details['completion_ratio']
+
+    def _build_json_complete_course(self, course_id: int):
+        return {"lecture_id": course_id, "downloaded": False}
+
+    def _get_course_details(self, course_id: int) :
+        """
+        Retrieves details relating to the course passed in
+
+        :param int course_id: Id of the course to get the details of
+        :return: dictionary containing the course details
+        """
+        return self.session.get(self.COURSE_DETAILS.format(course_id)).json()
+
+    def _send_completition_req(self, course_link: str, list_of_lectures_ids: List, course_id: int) -> json:
+        url_pattern = r"https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/{}/completed-lectures/"
+        logger.info(f"Logging course details {self._get_course_details(course_id)}")
+        for lect in list_of_lectures_ids:
+            print(self._build_json_complete_course(lect))
+            logger.info(f"Sending request to mark lecture {lect} as completed of course {course_id}")
+            response=self.session.post(url_pattern.format(course_id), json=self._build_json_complete_course(lect))
+            logger.info(f"{response.status_code} - {response.text}")
+

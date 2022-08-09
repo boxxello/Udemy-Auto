@@ -129,8 +129,17 @@ def _redeem_courses_ui(
                         #     f"Sleeping for {sleep_time} seconds between enrolments"
                         # )
                         # time.sleep(sleep_time)
-                        list_of_lectures_id=udemy_actions._get_all_lectures_id(course_link)
-                        print(f"Printing list of lectures of {course_link}: {list_of_lectures_id}")
+                        course_link_complt=udemy_actions._get_completition_course_link(course_link)
+
+                        course_link, course_id=udemy_actions._get_course_link_from_redirect(course_link)
+                        if udemy_actions._get_completetion_ratio(course_link_complt)!=100:
+                            print(f"course link {course_link}")
+                            list_of_lectures_id=udemy_actions._get_all_lectures_id(course_link)
+
+                            print(f"Printing list of lectures of {course_link}: {list_of_lectures_id}")
+                            print(udemy_actions._send_completition_req(course_link, list_of_lectures_id, course_id))
+                        else:
+                            logger.info("Course was already finished")
 
 
 
