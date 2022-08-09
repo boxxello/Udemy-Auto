@@ -86,6 +86,7 @@ class UdemyActionsUI:
     REQUEST_URL_URL = "https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=url"
     REQUEST_LECTURES = "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/{}/lectures"
     REQUEST_LECTURES_NEXT = "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/673024/lectures/?page=4"
+
     HEADERS = {
         "origin": "https://ibm-learning.udemy.com/",
         "accept": "application/json, text/plain, */*",
@@ -98,7 +99,7 @@ class UdemyActionsUI:
     COURSE_DETAILS = (
         "https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=title,url,context_info,primary_category,"
         "primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,"
-        "num_subscribers"
+        "num_subscribers,num_quizzes,num_lectures,completion_ratio"
     )
     ENROLLED_COURSES_URL = ("https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/")
 

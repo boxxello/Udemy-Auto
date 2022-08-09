@@ -125,26 +125,19 @@ def _redeem_courses_ui(
                     udemy_course_links
             ):  # Cast to set to remove duplicate links
                 try:
-
-                    if not udemy_actions.extract_cs_id(course_link) in udemy_actions.already_rolled_courses:
+                    course_link, course_id = udemy_actions._get_course_link_from_redirect(course_link)
+                    if not course_id in udemy_actions.already_rolled_courses:
                         logger.info("Not in the courses already done")
                         status=udemy_actions.enroll(course_link)
                     else:
                         logger.info("In the courses already done ")
                         status=UdemyStatus.ALREADY_ENROLLED.value
                     if status == UdemyStatus.ENROLLED.value or status == UdemyStatus.ALREADY_ENROLLED.value:
-                        logger.info("if finale")
-                        # sleep_time = random.choice(range(1, 5))
-                        # logger.debug(
-                        #     f"Sleeping for {sleep_time} seconds between enrolments"
-                        # )
-                        # time.sleep(sleep_time)
-                        course_link_complt=udemy_actions._get_completition_course_link(course_link)
-
-                        course_link, course_id=udemy_actions._get_course_link_from_redirect(course_link)
-
-                        if udemy_actions._get_completetion_ratio(course_link_complt)!=100:
-                            if num_quizzes:=udemy_actions._get_course_quizzes_number(course_id)==-1:
+                        course_details = udemy_actions._get_course_details(course_id)
+                        course_details_complt=course_details['completion_ratio']
+                        course_details_has_quizzes=course_details['num_quizzes']
+                        if course_details_complt!=100:
+                            if str(course_details_has_quizzes)=='0':
                                 logger.info("It has got NO quizzes in it")
                             else:
                                 logger.info("It has got quizzes in it")
