@@ -96,6 +96,7 @@ def redeem_courses(
         logger.error(f"Exception in redeem courses: {e}")
 
 
+
 def _redeem_courses_ui(
         driver,
         settings: Settings,
@@ -109,11 +110,14 @@ def _redeem_courses_ui(
     :param ScraperManager scrapers:
     :return:
     """
+    logger.info("Creating the UdemyActionsUI object")
     udemy_actions = UdemyActionsUI(driver, settings)
     udemy_actions.login()
+    udemy_actions._get_already_rolled_courses()
     loop = asyncio.get_event_loop()
 
     while True:
+        logger.info("launching the scrapers")
         udemy_course_links = loop.run_until_complete(scrapers.run())
 
         if udemy_course_links:
@@ -121,9 +125,17 @@ def _redeem_courses_ui(
                     udemy_course_links
             ):  # Cast to set to remove duplicate links
                 try:
-                    status = udemy_actions.enroll(course_link)
+                    logger.info("arrivo qua dentro il try")
+                    print(udemy_actions.extract_cs_id(course_link))
+                    print(udemy_actions.already_rolled_courses)
+                    if not udemy_actions.extract_cs_id(course_link) in udemy_actions.already_rolled_courses:
+                        logger.info("Not in the courses already done")
+                        status=udemy_actions.enroll(course_link)
+                    else:
+                        logger.info("In the courses already done ")
+                        status=UdemyStatus.ALREADY_ENROLLED.value
                     if status == UdemyStatus.ENROLLED.value or status == UdemyStatus.ALREADY_ENROLLED.value:
-
+                        logger.info("if finale")
                         # sleep_time = random.choice(range(1, 5))
                         # logger.debug(
                         #     f"Sleeping for {sleep_time} seconds between enrolments"

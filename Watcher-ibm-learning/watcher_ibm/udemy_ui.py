@@ -90,18 +90,21 @@ class UdemyActionsUI:
         "origin": "https://ibm-learning.udemy.com/",
         "accept": "application/json, text/plain, */*",
         "accept-encoding": "gzip, deflate, br",
-        "content-type": "application/json;charset=UTF-8",
+        "Content-Type": "application/json;charset=utf-8",
         "x-requested-with": "XMLHttpRequest",
         "x-checkout-version": "2",
         "referer": "https://ibm-learning.udemy.com/",
     }
     COURSE_DETAILS = (
-        "https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=title,context_info,primary_category,"
+        "https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=title,url,context_info,primary_category,"
         "primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,"
         "num_subscribers"
     )
+    ENROLLED_COURSES_URL = ("https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/")
 
     def __init__(self, driver: WebDriver, settings: Settings, cookie_file_name: str = ".cookie"):
+
+
         self.driver = driver
         self.settings = settings
         self.logged_in = False
@@ -109,6 +112,7 @@ class UdemyActionsUI:
         self.session = requests.Session()
         self.stats.start_time = datetime.utcnow()
         self._cookie_file = os.path.join(get_app_dir(), cookie_file_name)
+        self.already_rolled_courses = []
 
     def login(self, is_retry=False) -> None:
         """
@@ -191,9 +195,6 @@ class UdemyActionsUI:
                         # check if file is empty
                         if os.stat(self._cookie_file).st_size == 0:
                             raise LoginException("Udemy user failed to login")
-
-
-
 
                     except TimeoutException:
                         raise LoginException("Udemy user failed to login")
@@ -394,11 +395,14 @@ class UdemyActionsUI:
                 return UdemyStatus.ALREADY_ENROLLED.value
 
     def _find_all_lectures(self, first_link_to) -> List[str]:
+        logger.info(f"Finding all lectures in: '{first_link_to}'")
         resp_json_json = self._resp_from_url_with_session(first_link_to)
+
         next_links_lst = []
         next_links_lst.append(first_link_to)
-        extracted_link = resp_json_json['next']
-        next_links_lst.append(extracted_link)
+
+        extracted_link = resp_json_json.get("next")
+
         flag = True
 
         while flag:
@@ -408,7 +412,7 @@ class UdemyActionsUI:
 
                     next_links_lst.append(extracted_link)
                     response_got = self._resp_from_url_with_session(extracted_link)
-                    extracted_link = response_got['next']
+                    extracted_link = response_got.get('next')
                 else:
                     flag = False
             else:
@@ -610,11 +614,11 @@ class UdemyActionsUI:
     def _get_completetion_ratio(self, course_link):
         response_details = self.session.get(course_link).json()
         return response_details['completion_ratio']
-
-    def _build_json_complete_course(self, course_id: int):
+    @staticmethod
+    def _build_json_complete_course(course_id: int):
         return {"lecture_id": course_id, "downloaded": False}
 
-    def _get_course_details(self, course_id: int) :
+    def _get_course_details(self, course_id: int):
         """
         Retrieves details relating to the course passed in
 
@@ -623,12 +627,43 @@ class UdemyActionsUI:
         """
         return self.session.get(self.COURSE_DETAILS.format(course_id)).json()
 
+    def _get_already_rolled_courses(self) -> List[int]:
+        """
+        Retrieves the already enrolled courses
+        """
+        logger.info("Getting already enrolled courses")
+        list_of_links = self._find_all_lectures(self.ENROLLED_COURSES_URL)
+        logger.info("Found {} enrolled courses pages".format(len(list_of_links)))
+        for x in list_of_links:
+            response=self.session.get(x)
+            resp_json=response.json()
+
+            if response.status_code == 200:
+                if re_res:=resp_json['results']:
+                    for x in re_res:
+                        if x['id'] not in self.already_rolled_courses:
+                            self.already_rolled_courses.append(x['id'])
+
+        return self.already_rolled_courses
+
     def _send_completition_req(self, course_link: str, list_of_lectures_ids: List, course_id: int) -> json:
         url_pattern = r"https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/{}/completed-lectures/"
-        logger.info(f"Logging course details {self._get_course_details(course_id)}")
+        new_url_xpath = r"api-2.0/users/me/subscribed-courses/{}/completed-lectures/"
+        course_details = self._get_course_details(course_id)
+        course_url = course_details['url']
+        logger.info(f"\n\nLogging course details {course_details}\n\n{course_url}")
+        new_session = requests.Session()
+        new_session.headers.update(self.session.headers)
+        new_session.cookies.update(self.session.cookies)
+        new_session.headers.update({"xpath": new_url_xpath.format(course_id)})
+        new_session.headers.update({"Accept": "application/json"})
+        new_session.headers.update({"authority": "ibm-learning.udemy.com"})
+        #https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/1602900/user-attempted-quizzes/778172944/coding-exercise-answers/
         for lect in list_of_lectures_ids:
             print(self._build_json_complete_course(lect))
             logger.info(f"Sending request to mark lecture {lect} as completed of course {course_id}")
-            response=self.session.post(url_pattern.format(course_id), json=self._build_json_complete_course(lect))
+            response = new_session.post(url_pattern.format(course_id), json=self._build_json_complete_course(lect))
+            # logger.info(f"Headers in request {response.headers}\n\n"
+            #             f"Cookies in request {response.cookies}\n\n"
+            #             f"")
             logger.info(f"{response.status_code} - {response.text}")
-
