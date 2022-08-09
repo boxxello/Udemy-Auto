@@ -125,9 +125,7 @@ def _redeem_courses_ui(
                     udemy_course_links
             ):  # Cast to set to remove duplicate links
                 try:
-                    logger.info("arrivo qua dentro il try")
-                    print(udemy_actions.extract_cs_id(course_link))
-                    print(udemy_actions.already_rolled_courses)
+
                     if not udemy_actions.extract_cs_id(course_link) in udemy_actions.already_rolled_courses:
                         logger.info("Not in the courses already done")
                         status=udemy_actions.enroll(course_link)
@@ -144,12 +142,19 @@ def _redeem_courses_ui(
                         course_link_complt=udemy_actions._get_completition_course_link(course_link)
 
                         course_link, course_id=udemy_actions._get_course_link_from_redirect(course_link)
+
                         if udemy_actions._get_completetion_ratio(course_link_complt)!=100:
+                            if num_quizzes:=udemy_actions._get_course_quizzes_number(course_id)==-1:
+                                logger.info("It has got NO quizzes in it")
+                            else:
+                                logger.info("It has got quizzes in it")
+
                             print(f"course link {course_link}")
-                            list_of_lectures_id=udemy_actions._get_all_lectures_id(course_link)
+                            list_of_lectures_id = udemy_actions._get_all_lectures_id(course_link)
 
                             print(f"Printing list of lectures of {course_link}: {list_of_lectures_id}")
                             print(udemy_actions._send_completition_req(course_link, list_of_lectures_id, course_id))
+
                         else:
                             logger.info("Course was already finished")
 

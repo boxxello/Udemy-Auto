@@ -272,6 +272,19 @@ class UdemyActionsUI:
                         "x-csrftoken": bearer_token['value'],
                     }
                 )
+    def _get_course_quizzes_number(self, course_id):
+        """
+        Get the number of quizzes for a course
+        :param course_id:
+        :return:
+        """
+
+        response = self.session.get(self.REQUEST_URL_NUM_QUIZZES.format(course_id))
+        response_json= response.json()
+        if response.status_code == 200:
+            return response_json['num_quizzes']
+        else:
+            return -1
 
     def enroll(self, url: str) -> str:
         """
