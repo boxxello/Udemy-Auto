@@ -1,5 +1,6 @@
 import json
 import os
+import random
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -75,6 +76,7 @@ class UdemyStatus(Enum):
     UNWANTED_CATEGORY = "UNWANTED_CATEGORY"
 
 
+
 class UdemyActionsUI:
     """
     Contains any logic related to interacting with udemy website
@@ -105,8 +107,11 @@ class UdemyActionsUI:
     RESPONSES_URL = "https://ibm-learning.udemy.com/api-2.0/quizzes/{}/assessments/?version=1&page_size=1400&fields[assessment]=id,assessment_type,prompt,correct_response,section,question_plain,related_lectures"
     COMPLETED_QUIZ_IDS = "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/359550/progress/?fields[course]=completed_lecture_ids,completed_quiz_ids,last_seen_page,completed_assignment_ids,first_completion_time"
     BOH = "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/359550/quizzes/95416/?draft=false&fields[quiz]=id,type,title,description,object_index,num_assessments,version,duration,is_draft,pass_percent,changelog"
-
+    URL_SEND_RESPONSE = (
+        "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/{course_id}/user-attempted-quizzes/{quiz_id}/assessment-answers/")
+    #	/api-2.0/users/me/subscribed-courses/359550/quizzes/95420/user-attempted-quizzes/latest/
     # https://ibm-learning.udemy.com/course/mastering-object-oriented-design-in-java/learn/quiz/95416#overview
+    LAST_ID_QUIZ = "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/{course_id}/quizzes/{quiz_id]/user-attempted-quizzes/latest"
 
     def __init__(self, driver: WebDriver, settings: Settings, cookie_file_name: str = ".cookie"):
 
@@ -292,24 +297,25 @@ class UdemyActionsUI:
         else:
             return -1
 
-    def enroll(self, url: str) -> str:
+    def enroll(self, url: str) -> tuple:
         """
         Redeems the course url passed in
 
         :param str url: URL of the course to redeem
         :return: A string detailing course status
         """
-
+        logger.info("Enrolling in course")
         self.driver.get(url)
-
+        logger.info("Setting up course")
         course_name = self.driver.title
-
+        logger.info("Starting language check")
         if not self._check_languages(course_name):
-            return UdemyStatus.UNWANTED_LANGUAGE.value
+            return UdemyStatus.UNWANTED_LANGUAGE.value, None, None
 
         logger.info("Check languages done")
+        logger.info("Starting categories check")
         if not self._check_categories(course_name):
-            return UdemyStatus.UNWANTED_CATEGORY.value
+            return UdemyStatus.UNWANTED_CATEGORY.value, None, None
         logger.info("Check Categories done")
 
         try:
@@ -321,97 +327,21 @@ class UdemyActionsUI:
             )
 
         except TimeoutException:
+            logger.error("Course is already purchased")
             return UdemyStatus.ALREADY_ENROLLED.value
         else:
             # Check if already enrolled. If add to cart is available we have not yet enrolled
-            if not self._check_enrolled(course_name):
-                element_present = EC.presence_of_element_located(
-                    (By.XPATH, buy_course_button_xpath)
-                )
-                WebDriverWait(self.driver, 10).until(element_present).click()
+            logger.info("Checking if already enrolled")
 
-                # Enroll Now 2
-                enroll_button_xpath = "//div[starts-with(@class, 'checkout-button--checkout-button--container')]//button"
-                element_present = EC.presence_of_element_located(
-                    (
-                        By.XPATH,
-                        enroll_button_xpath,
-                    )
-                )
-                WebDriverWait(self.driver, 10).until(element_present)
-                print("Enrolled!")
-                # Check if zipcode exists before doing this
-                if self.settings.zip_code:
-                    # zipcode is only required in certain regions (e.g USA)
-                    try:
-                        element_present = EC.presence_of_element_located(
-                            (
-                                By.ID,
-                                "billingAddressSecondaryInput",
-                            )
-                        )
-                        WebDriverWait(self.driver, 5).until(element_present).send_keys(
-                            self.settings.zip_code
-                        )
-                        print("Zipcode entered")
-                        # After you put the zip code in, the page refreshes itself and disables the enroll button for a split
-                        # second.
-                        enroll_button_is_clickable = EC.element_to_be_clickable(
-                            (By.XPATH, enroll_button_xpath)
-                        )
-                        WebDriverWait(self.driver, 5).until(enroll_button_is_clickable)
-                        print("Enroll button is clickable")
-                    except (TimeoutException, NoSuchElementException):
-                        pass
+            element_present = EC.presence_of_element_located(
+                (By.XPATH, buy_course_button_xpath)
+            )
+            WebDriverWait(self.driver, 10).until(element_present).click()
 
-                # Make sure the price has loaded
-                price_class_loading = "udi-circle-loader"
-                WebDriverWait(self.driver, 10).until_not(
-                    EC.presence_of_element_located((By.CLASS_NAME, price_class_loading))
-                )
-
-                # Make sure the course is Free
-                if not self._check_price(course_name):
-                    return UdemyStatus.EXPIRED.value
-
-                # Check if state/province element exists
-                billing_state_element_id = "billingAddressSecondarySelect"
-                billing_state_elements = self.driver.find_elements_by_id(
-                    billing_state_element_id
-                )
-                if billing_state_elements:
-                    # If we are here it means a state/province element exists and needs to be filled
-                    # Open the dropdown menu
-                    billing_state_elements[0].click()
-
-                    # Pick the first element in the state/province dropdown
-                    first_state_xpath = (
-                        "//select[@id='billingAddressSecondarySelect']//option[2]"
-                    )
-                    element_present = EC.presence_of_element_located(
-                        (By.XPATH, first_state_xpath)
-                    )
-                    WebDriverWait(self.driver, 10).until(element_present).click()
-
-                # Hit the final Enroll now button
-                enroll_button_is_clickable = EC.element_to_be_clickable(
-                    (By.XPATH, enroll_button_xpath)
-                )
-                WebDriverWait(self.driver, 10).until(enroll_button_is_clickable).click()
-
-                # Wait for success page to load
-                success_element_class = (
-                    "//div[contains(@class, 'success-alert-banner-container')]"
-                )
-                WebDriverWait(self.driver, 10).until(
-                    EC.presence_of_element_located((By.XPATH, success_element_class))
-                )
-
-                logger.info(f"Successfully enrolled in: '{course_name}'")
-                self.stats.enrolled += 1
-                return UdemyStatus.ENROLLED.value
-            else:
-                return UdemyStatus.ALREADY_ENROLLED.value
+            logger.info(f"Successfully enrolled in: '{course_name}'")
+            self.stats.enrolled += 1
+            cs_link, course_id = self._get_course_link_from_redirect(url)
+            return UdemyStatus.ENROLLED.value, cs_link, course_id
 
     def _find_all_lectures(self, first_link_to) -> List[str]:
         logger.info(f"Finding all lectures in: '{first_link_to}'")
@@ -502,19 +432,6 @@ class UdemyActionsUI:
         links = [link.get_attribute('href') for link in links]
         return links
 
-    def _check_enrolled(self, course_name):
-        add_to_cart_xpath = (
-            "//div[starts-with(@class, 'buy-box')]//div[@data-purpose='add-to-cart']"
-        )
-        add_to_cart_elements = self.driver.find_elements_by_xpath(add_to_cart_xpath)
-        if not add_to_cart_elements or (
-                add_to_cart_elements and not add_to_cart_elements[0].is_displayed()
-        ):
-            logger.debug(f"Already enrolled in '{course_name}'")
-            self.stats.already_enrolled += 1
-            return True
-        return False
-
     def _load_cookies(self) -> Dict:
         """
         Loads existing cookie file
@@ -554,20 +471,25 @@ class UdemyActionsUI:
     def _check_languages(self, course_identifier):
         is_valid_language = True
         if self.settings.languages:
-            locale_xpath = "/html/body/div[1]/div[1]/div/div/main/div/div[3]/div/div/section/div/div[3]/div/div[2]/div[4]/div[1]"
-            element_text = (
-                WebDriverWait(self.driver, 10)
-                .until(EC.presence_of_element_located((By.XPATH, locale_xpath)))
-                .text
-            )
-
-            if element_text not in self.settings.languages:
-                logger.debug(f"Course language not wanted: {element_text}")
-                logger.debug(
-                    f"Course '{course_identifier}' language not wanted: {element_text}"
+            locale_xpath = "//div[@data-purpose='lead-course-locale']"
+            try:
+                element_text = (
+                    WebDriverWait(self.driver, 10)
+                    .until(EC.presence_of_element_located((By.XPATH, locale_xpath)))
+                    .text
                 )
-                self.stats.unwanted_language += 1
-                is_valid_language = False
+            except TimeoutException:
+                logger.error("Couldn't find the language element")
+                return True
+            else:
+                logger.info(f"Found language element: {element_text}")
+                if element_text not in self.settings.languages:
+                    logger.info(f"Course language not wanted: {element_text}")
+                    logger.info(
+                        f"Course '{course_identifier}' language not wanted: {element_text}"
+                    )
+                    self.stats.unwanted_language += 1
+                    is_valid_language = False
         return is_valid_language
 
     def _check_categories(self, course_identifier):
@@ -589,7 +511,7 @@ class UdemyActionsUI:
                     is_valid_category = True
                     break
             else:
-                logger.debug(
+                logger.info(
                     f"Skipping course '{course_identifier}' as it does not have a wanted category"
                 )
                 self.stats.unwanted_category += 1
@@ -615,7 +537,7 @@ class UdemyActionsUI:
                 self.stats.currency_symbol = checkout_price.currency
 
             if checkout_price.amount is None or checkout_price.amount > 0:
-                logger.debug(
+                logger.info(
                     f"Skipping course '{course_name}' as it now costs {_price}"
                 )
                 self.stats.expired += 1
@@ -695,7 +617,7 @@ class UdemyActionsUI:
         :param int course_id: Id of the course to get the assessment ids of
         :return: list of assessment ids
         """
-        assessment_json=self.session.get(self.QUIZ_URL.format(course_id)).json()
+        assessment_json = self.session.get(self.QUIZ_URL.format(course_id)).json()
 
         results = assessment_json['results']
         assessment_lst_id = []
@@ -704,20 +626,27 @@ class UdemyActionsUI:
 
                 if x['_class'] == 'quiz':
                     assessment_lst_id.append(x['id'])
+        # logger.info("Printing all quizs_ids")
+        # for x in assessment_lst_id:
+        #     logger.info(f"Found quiz id {x}")
         return assessment_lst_id
 
     def _get_assessments(self, course_id: int):
-        assessment_lst_ids=self._get_assessment_ids(course_id)
+        assessment_lst_ids = self._get_assessment_ids(course_id)
         if assessment_lst_ids:
             assessment_lst = []
             for x in assessment_lst_ids:
                 assessment_json = self.session.get(self.RESPONSES_URL.format(x)).json()
                 results = assessment_json['results']
-                for x in results:
-                    if x['_class'] != 'lecture':
 
-                        if x['_class'] == 'assessment':
-                            assessment_lst.append(x)
+                for y in results:
+                    y.update({'assessment_initial_id': x})
+                    if y['_class'] != 'lecture':
+
+                        if y['_class'] == 'assessment':
+                            assessment_lst.append(y)
+            for y in assessment_lst:
+                logger.info(f"Found assessment id {y['id']}, quiz id {y['assessment_initial_id']}")
             return assessment_lst
 
     def _send_completition_req(self, course_link: str, list_of_lectures_ids: List, course_id: int) -> json:
@@ -741,6 +670,20 @@ class UdemyActionsUI:
             #             f"Cookies in request {response.cookies}\n\n"
             #             f"")
             logger.info(f"{response.status_code} - {response.text}")
+    @staticmethod
+    def _build_json_complete_part_quiz(x: json):
+        # mapping number to character
+        # corresponding_char = chr(ord('a') + idx)
+        correct_response = x.get('correct_response')
+        rand_duration = random.randint(1, 150)
+
+        json_to_ret = {"assessment_id": x.get('id'), "response": correct_response,
+                       "duration": rand_duration}
+        print(json_to_ret)
+        return json_to_ret
+
+
+
 
     def _solve_quiz(self, course_id: int):
         new_session = requests.Session()
@@ -749,5 +692,13 @@ class UdemyActionsUI:
         new_session.headers.update({"Accept": "application/json"})
         new_session.headers.update({"authority": "ibm-learning.udemy.com"})
         assessment_lst = self._get_assessments(course_id)
-        print(assessment_lst)
-        #response = new_session.post(url_pattern.format(course_id), json=self._build_json_complete_course(lect))
+        for idx, x in enumerate(assessment_lst):
+            print(f"Quiz idx: {idx}\n{x} \n\n")
+            req_json = self._build_json_complete_part_quiz(x)
+            print(
+                f"Sending to {self.URL_SEND_RESPONSE.format(course_id=course_id, quiz_id=x['assessment_initial_id'])} what is {req_json}")
+            response = new_session.post(
+                self.URL_SEND_RESPONSE.format(course_id=course_id, quiz_id=x['assessment_initial_id']),
+                json=req_json)
+            print(response.status_code)
+            print(response.text)

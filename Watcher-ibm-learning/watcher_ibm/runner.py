@@ -12,7 +12,6 @@ from selenium.common.exceptions import (
 from watcher_ibm import (
     ScraperManager,
     Settings,
-    UdemyActions,
     UdemyActionsUI,
     UdemyStatus,
     exceptions,
@@ -68,27 +67,19 @@ def redeem_courses(
         settings: Settings,
 
         udemy_scraper_enabled: bool,
-        discudemy_enabled: bool,
-        coursevania_enabled: bool,
         max_pages: Union[int, None],
 ) -> None:
     """
     Wrapper of _redeem_courses which catches unhandled exceptions
 
     :param Settings settings: Core settings used for Udemy
-    :param bool freebiesglobal_enabled: Boolean signifying if freebiesglobal scraper should run
-    :param bool tutorialbar_enabled: Boolean signifying if tutorialbar scraper should run
-    :param bool discudemy_enabled: Boolean signifying if discudemy scraper should run
-    :param bool coursevania_enabled: Boolean signifying if coursevania scraper should run
+    :param bool udemy_scraper_enabled: Boolean signifying if freebiesglobal scraper should run
     :param int max_pages: Max pages to scrape from sites (if pagination exists)
     :return:
     """
     try:
         scrapers = ScraperManager(
-
             udemy_scraper_enabled,
-            discudemy_enabled,
-            coursevania_enabled,
             max_pages,
             driver,
         )
@@ -150,14 +141,17 @@ def _redeem_courses_ui(
                     udemy_course_links
             ):  # Cast to set to remove duplicate links
                 try:
-                    course_link, course_id = udemy_actions._get_course_link_from_redirect(course_link)
-                    if not course_id in udemy_actions.already_rolled_courses:
-                        logger.info("Not in the courses already done")
-                        status = udemy_actions.enroll(course_link)
+                    cs_link, course_id = udemy_actions._get_course_link_from_redirect(course_link)
+                    logger.debug(course_id)
+                    if not course_id:
+                        logger.info("Not in a rolled in course")
+                        status, cs_link,course_id = udemy_actions.enroll(course_link)
                     else:
-                        logger.info("In the courses already done ")
+                        logger.info("In the courses already rolled ")
                         status = UdemyStatus.ALREADY_ENROLLED.value
                     if status == UdemyStatus.ENROLLED.value or status == UdemyStatus.ALREADY_ENROLLED.value:
+
+                        logger.info(f"Enrolled/Already enrolled in {cs_link}, trying to get it to finish")
                         course_details = udemy_actions._get_course_details(course_id)
                         course_details_complt = course_details['completion_ratio']
                         course_details_has_quizzes = course_details['num_quizzes']
@@ -168,11 +162,11 @@ def _redeem_courses_ui(
                                 logger.info("It has got quizzes in it")
                                 udemy_actions._solve_quiz(course_id)
 
-                            print(f"course link {course_link}")
-                            list_of_lectures_id = udemy_actions._get_all_lectures_id(course_link)
+                            print(f"course link {cs_link}")
+                            list_of_lectures_id = udemy_actions._get_all_lectures_id(cs_link)
 
-                            print(f"Printing list of lectures of {course_link}: {list_of_lectures_id}")
-                            print(udemy_actions._send_completition_req(course_link, list_of_lectures_id, course_id))
+                            print(f"Printing list of lectures of {cs_link}: {list_of_lectures_id}")
+                            print(udemy_actions._send_completition_req(cs_link, list_of_lectures_id, course_id))
 
                         else:
                             logger.info("Course was already finished")
@@ -210,8 +204,6 @@ def redeem_courses_ui(
         driver,
         settings: Settings,
         udemy_scraper_enabled: bool,
-        tutorialbar_enabled: bool,
-        discudemy_enabled: bool,
         max_pages: Union[int, None],
         scrape_urls_from_file: bool,
         filename: str
@@ -222,8 +214,6 @@ def redeem_courses_ui(
     :param WebDriver driver: WebDriver to use to complete enrolment
     :param Settings settings: Core settings used for Udemy
     :param bool udemy_scraper_enabled: Boolean signifying if udemy scraper scraper should run
-    :param bool tutorialbar_enabled: Boolean signifying if tutorialbar scraper should run
-    :param bool discudemy_enabled: Boolean signifying if discudemy scraper should run
     :param int max_pages: Max pages to scrape from sites (if pagination exists)
     :return:
     """
@@ -231,8 +221,7 @@ def redeem_courses_ui(
     try:
         scrapers = ScraperManager(
             udemy_scraper_enabled,
-            tutorialbar_enabled,
-            discudemy_enabled,
+
             max_pages,
             driver
         )

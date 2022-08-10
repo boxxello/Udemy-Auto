@@ -1,4 +1,6 @@
 import os
+import random
+
 import validators
 
 def get_app_dir() -> str:
@@ -25,4 +27,7 @@ def read_file(file_name):
             list_of_urls.append(line)
     return list_of_urls
 
+def generate_9_digit_random_number()->int:
+    n = 9
+    return int(''.join(["{}".format(random.randint(0, 9)) for _ in range(0, n)]))
 

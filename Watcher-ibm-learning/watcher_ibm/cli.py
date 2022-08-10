@@ -22,42 +22,12 @@ def enable_debug_logging() -> None:
     logger.info(f"Enabled debug logging")
 
 
-def determine_if_scraper_enabled(
-        udemy_scraper_enabled: bool,
-        tutorialbar_enabled: bool,
-        discudemy_enabled: bool,
 
-) -> tuple[bool, bool, bool]:
-    """
-    Determine what scrapers should be enabled and disabled
-
-    :return: tuple containing boolean of what scrapers should run
-    """
-    if (
-            not udemy_scraper_enabled and
-            not tutorialbar_enabled
-            and not discudemy_enabled
-
-    ):
-        # Set all to True
-        (udemy_scraper_enabled,
-         tutorialbar_enabled,
-         discudemy_enabled
-         ) = (True, True, True)
-
-    return (
-        udemy_scraper_enabled,
-        tutorialbar_enabled,
-        discudemy_enabled,
-    )
 
 
 def run(
         browser: str,
         udemy_scraper_enabled: bool,
-        tutorialbar_enabled: bool,
-        discudemy_enabled: bool,
-
         max_pages: Union[int, None],
         delete_settings: bool,
         delete_cookie: bool,
@@ -85,8 +55,6 @@ def run(
             dm.driver,
             settings,
             udemy_scraper_enabled,
-            tutorialbar_enabled,
-            discudemy_enabled,
             max_pages,
             scrape_urls_from_file,
             filename
@@ -99,8 +67,6 @@ def run(
             dm.driver,
             settings,
             udemy_scraper_enabled,
-            tutorialbar_enabled,
-            discudemy_enabled,
             max_pages,
 
         )
@@ -191,19 +157,10 @@ def main():
     if args:
         if args.debug:
             enable_debug_logging()
-        (
-            udemy_scraper_enabled,
-            tutorialbar_enabled,
-            discudemy_enabled,
 
-        ) = determine_if_scraper_enabled(
-            args.udemybase, args.tutorialbar, args.discudemy
-        )
         run(
             args.browser,
-            udemy_scraper_enabled,
-            tutorialbar_enabled,
-            discudemy_enabled,
+            args.udemybase,
 
             args.max_pages,
             args.delete_settings,
