@@ -61,6 +61,8 @@ def run(
         max_pages: Union[int, None],
         delete_settings: bool,
         delete_cookie: bool,
+        scrape_urls_from_file: bool,
+        filename: str
 ):
     """
     Run the udemy enroller script
@@ -86,9 +88,11 @@ def run(
             tutorialbar_enabled,
             discudemy_enabled,
             max_pages,
+            scrape_urls_from_file,
+            filename
         )
     else:
-        browser="chrome"
+        browser = "chrome"
         dm = DriverManager(browser=browser, is_ci_build=settings.is_ci_build)
         print("ci arrivo no browser")
         redeem_courses(
@@ -100,6 +104,8 @@ def run(
             max_pages,
 
         )
+
+
 def parse_args() -> Namespace:
     """
     Parse args from the CLI or use the args passed in
@@ -162,6 +168,18 @@ def parse_args() -> Namespace:
         default=True,
         help="Enable debug logging",
     )
+    parser.add_argument(
+        "--file",
+        action="store_true",
+        default="file.txt",
+        help="Name of the file you want to scrape urls from",
+    )
+    parser.add_argument(
+        "--scrape_from_file",
+        action="store_true",
+        default=True,
+        help="Enable scraping from file ",
+    )
 
     args = parser.parse_args()
     print(args)
@@ -179,7 +197,7 @@ def main():
             discudemy_enabled,
 
         ) = determine_if_scraper_enabled(
-            args.udemybase,args.tutorialbar, args.discudemy
+            args.udemybase, args.tutorialbar, args.discudemy
         )
         run(
             args.browser,
@@ -190,4 +208,6 @@ def main():
             args.max_pages,
             args.delete_settings,
             args.delete_cookie,
+            args.scrape_from_file,
+            args.file
         )

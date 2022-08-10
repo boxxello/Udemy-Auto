@@ -12,3 +12,10 @@ class LoginException(Exception):
     """
 
     pass
+
+
+class CourseNotFoundException(Exception):
+    """
+       You have failed to find the course on Udemy site
+    """
+    pass

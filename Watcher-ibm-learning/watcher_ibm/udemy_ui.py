@@ -86,7 +86,7 @@ class UdemyActionsUI:
     REQUEST_URL_URL = "https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=url"
     REQUEST_LECTURES = "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/{}/lectures"
     REQUEST_LECTURES_NEXT = "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/673024/lectures/?page=4"
-
+    URL_TO_COURSE_ID = "https://ibm-learning.udemy.com/course/{}/"
     HEADERS = {
         "origin": "https://ibm-learning.udemy.com/",
         "accept": "application/json, text/plain, */*",
@@ -97,14 +97,18 @@ class UdemyActionsUI:
         "referer": "https://ibm-learning.udemy.com/",
     }
     COURSE_DETAILS = (
-        "https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=title,url,context_info,primary_category,"
-        "primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,"
-        "num_subscribers,num_quizzes,num_lectures,completion_ratio"
+        "https://ibm-learning.udemy.com/api-2.0/courses/{}/?fields[course]=title,url,context_info,primary_category,primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,num_subscribers,num_quizzes,num_lectures,completion_ratio"
     )
     ENROLLED_COURSES_URL = ("https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/")
 
-    def __init__(self, driver: WebDriver, settings: Settings, cookie_file_name: str = ".cookie"):
+    QUIZ_URL = "https://ibm-learning.udemy.com/api-2.0/courses/{}/subscriber-curriculum-items/?page_size=1400&fields[lecture]=title,object_index,is_published,sort_order,created,asset,supplementary_assets,is_free&fields[quiz]=title,object_index,is_published,sort_order,type&fields[practice]=title,object_index,is_published,sort_order&fields[chapter]=title,object_index,is_published,sort_order&fields[asset]=title,filename,asset_type,status,time_estimation,is_external&caching_intent=Truefields[course]=title,url,context_info,primary_category,primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,num_subscribers,num_quizzes,num_lectures,completion_ratio"
+    RESPONSES_URL = "https://ibm-learning.udemy.com/api-2.0/quizzes/{}/assessments/?version=1&page_size=1400&fields[assessment]=id,assessment_type,prompt,correct_response,section,question_plain,related_lectures"
+    COMPLETED_QUIZ_IDS = "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/359550/progress/?fields[course]=completed_lecture_ids,completed_quiz_ids,last_seen_page,completed_assignment_ids,first_completion_time"
+    BOH = "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/359550/quizzes/95416/?draft=false&fields[quiz]=id,type,title,description,object_index,num_assessments,version,duration,is_draft,pass_percent,changelog"
 
+    # https://ibm-learning.udemy.com/course/mastering-object-oriented-design-in-java/learn/quiz/95416#overview
+
+    def __init__(self, driver: WebDriver, settings: Settings, cookie_file_name: str = ".cookie"):
 
         self.driver = driver
         self.settings = settings
@@ -273,6 +277,7 @@ class UdemyActionsUI:
                         "x-csrftoken": bearer_token['value'],
                     }
                 )
+
     def _get_course_quizzes_number(self, course_id):
         """
         Get the number of quizzes for a course
@@ -281,7 +286,7 @@ class UdemyActionsUI:
         """
 
         response = self.session.get(self.REQUEST_URL_NUM_QUIZZES.format(course_id))
-        response_json= response.json()
+        response_json = response.json()
         if response.status_code == 200:
             return response_json['num_quizzes']
         else:
@@ -433,12 +438,35 @@ class UdemyActionsUI:
                 flag = False
         return next_links_lst
 
+    def _get_course_id(self, url: str):
+        self.driver.get(url)
+        add_to_cart_xpath = (
+            "//div[starts-with(@class, 'ud-app-loader')][@data-module-args]"
+        )
+        try:
+            dummy_element = (
+                WebDriverWait(self.driver, 10)
+                .until(EC.presence_of_element_located((By.XPATH, add_to_cart_xpath))))
+        except TimeoutException:
+            return None
+        else:
+            dummy_element = self.driver.find_elements_by_xpath(add_to_cart_xpath)
+            for x in dummy_element:
+                if x.get_attribute("data-module-args") is not None:
+                    attr = x.get_attribute("data-module-args")
+                    json_attr = json.loads(attr)
+                    return json_attr.get("courseId")
+
     @staticmethod
     def extract_cs_id(url: str) -> int:
         pattern = r"^https:\/\/(www\.)?ibm-learning\.udemy\.com\/course-dashboard-redirect\/\?course_id=(?P<extract_num>\d+)$"
         matches = regex.search(pattern, url, regex.M)
-        numb = int(matches.group('extract_num'))
-        return numb
+        if not matches:
+            new_pattern = r"https:\/\/(www\.)?ibm-learning\.udemy\.com\/course\/(?P<extract_num>\d+)\/?$"
+            matches = regex.search(new_pattern, url, regex.M)
+        if matches:
+            numb = int(matches.group('extract_num'))
+            return numb
 
     def _get_all_lectures_id(self, course_link) -> List[int]:
 
@@ -628,6 +656,7 @@ class UdemyActionsUI:
     def _get_completetion_ratio(self, course_link):
         response_details = self.session.get(course_link).json()
         return response_details['completion_ratio']
+
     @staticmethod
     def _build_json_complete_course(course_id: int):
         return {"lecture_id": course_id, "downloaded": False}
@@ -649,16 +678,47 @@ class UdemyActionsUI:
         list_of_links = self._find_all_lectures(self.ENROLLED_COURSES_URL)
         logger.info("Found {} enrolled courses pages".format(len(list_of_links)))
         for x in list_of_links:
-            response=self.session.get(x)
-            resp_json=response.json()
+            response = self.session.get(x)
+            resp_json = response.json()
 
             if response.status_code == 200:
-                if re_res:=resp_json['results']:
+                if re_res := resp_json['results']:
                     for x in re_res:
                         if x['id'] not in self.already_rolled_courses:
                             self.already_rolled_courses.append(x['id'])
 
         return self.already_rolled_courses
+
+    def _get_assessment_ids(self, course_id: int):
+        """
+        Retrieves the assessment ids for the course passed in
+        :param int course_id: Id of the course to get the assessment ids of
+        :return: list of assessment ids
+        """
+        assessment_json=self.session.get(self.QUIZ_URL.format(course_id)).json()
+
+        results = assessment_json['results']
+        assessment_lst_id = []
+        for x in results:
+            if x['_class'] != 'lecture':
+
+                if x['_class'] == 'quiz':
+                    assessment_lst_id.append(x['id'])
+        return assessment_lst_id
+
+    def _get_assessments(self, course_id: int):
+        assessment_lst_ids=self._get_assessment_ids(course_id)
+        if assessment_lst_ids:
+            assessment_lst = []
+            for x in assessment_lst_ids:
+                assessment_json = self.session.get(self.RESPONSES_URL.format(x)).json()
+                results = assessment_json['results']
+                for x in results:
+                    if x['_class'] != 'lecture':
+
+                        if x['_class'] == 'assessment':
+                            assessment_lst.append(x)
+            return assessment_lst
 
     def _send_completition_req(self, course_link: str, list_of_lectures_ids: List, course_id: int) -> json:
         url_pattern = r"https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/{}/completed-lectures/"
@@ -672,7 +732,7 @@ class UdemyActionsUI:
         new_session.headers.update({"xpath": new_url_xpath.format(course_id)})
         new_session.headers.update({"Accept": "application/json"})
         new_session.headers.update({"authority": "ibm-learning.udemy.com"})
-        #https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/1602900/user-attempted-quizzes/778172944/coding-exercise-answers/
+        # https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/1602900/user-attempted-quizzes/778172944/coding-exercise-answers/
         for lect in list_of_lectures_ids:
             print(self._build_json_complete_course(lect))
             logger.info(f"Sending request to mark lecture {lect} as completed of course {course_id}")
@@ -681,3 +741,13 @@ class UdemyActionsUI:
             #             f"Cookies in request {response.cookies}\n\n"
             #             f"")
             logger.info(f"{response.status_code} - {response.text}")
+
+    def _solve_quiz(self, course_id: int):
+        new_session = requests.Session()
+        new_session.headers.update(self.session.headers)
+        new_session.cookies.update(self.session.cookies)
+        new_session.headers.update({"Accept": "application/json"})
+        new_session.headers.update({"authority": "ibm-learning.udemy.com"})
+        assessment_lst = self._get_assessments(course_id)
+        print(assessment_lst)
+        #response = new_session.post(url_pattern.format(course_id), json=self._build_json_complete_course(lect))

@@ -18,6 +18,7 @@ from watcher_ibm import (
     exceptions,
 )
 from watcher_ibm.logging import get_logger
+from watcher_ibm.utils import read_file
 
 logger = get_logger()
 
@@ -96,11 +97,12 @@ def redeem_courses(
         logger.error(f"Exception in redeem courses: {e}")
 
 
-
 def _redeem_courses_ui(
         driver,
         settings: Settings,
         scrapers: ScraperManager,
+        scrape_urls_from_file: bool,
+        filename: str
 ) -> None:
     """
     Method to scrape courses from the supported sites and enroll in them on udemy.
@@ -118,7 +120,30 @@ def _redeem_courses_ui(
 
     while True:
         logger.info("launching the scrapers")
-        udemy_course_links = loop.run_until_complete(scrapers.run())
+
+        if scrape_urls_from_file and filename:
+            udemy_course_links = read_file(filename)
+            print(udemy_course_links)
+            udemy_course_ids=[]
+            for x in udemy_course_links:
+                crs_id=udemy_actions._get_course_id(x)
+                if crs_id is not None and crs_id not in udemy_course_ids:
+                    udemy_course_ids.append(crs_id)
+            if len(udemy_course_ids)>0:
+                udemy_course_links = []
+                for x in udemy_course_ids:
+                    udemy_course_links.append(udemy_actions.URL_TO_COURSE_ID.format(x))
+            print(udemy_course_links)
+
+
+
+
+
+        elif scrape_urls_from_file and not filename:
+            logger.error("this isn't a possible choice.")
+            return
+        else:
+            udemy_course_links = loop.run_until_complete(scrapers.run())
 
         if udemy_course_links:
             for course_link in set(
@@ -128,19 +153,20 @@ def _redeem_courses_ui(
                     course_link, course_id = udemy_actions._get_course_link_from_redirect(course_link)
                     if not course_id in udemy_actions.already_rolled_courses:
                         logger.info("Not in the courses already done")
-                        status=udemy_actions.enroll(course_link)
+                        status = udemy_actions.enroll(course_link)
                     else:
                         logger.info("In the courses already done ")
-                        status=UdemyStatus.ALREADY_ENROLLED.value
+                        status = UdemyStatus.ALREADY_ENROLLED.value
                     if status == UdemyStatus.ENROLLED.value or status == UdemyStatus.ALREADY_ENROLLED.value:
                         course_details = udemy_actions._get_course_details(course_id)
-                        course_details_complt=course_details['completion_ratio']
-                        course_details_has_quizzes=course_details['num_quizzes']
-                        if course_details_complt!=100:
-                            if str(course_details_has_quizzes)=='0':
+                        course_details_complt = course_details['completion_ratio']
+                        course_details_has_quizzes = course_details['num_quizzes']
+                        if course_details_complt != 100:
+                            if str(course_details_has_quizzes) == '0':
                                 logger.info("It has got NO quizzes in it")
                             else:
                                 logger.info("It has got quizzes in it")
+                                udemy_actions._solve_quiz(course_id)
 
                             print(f"course link {course_link}")
                             list_of_lectures_id = udemy_actions._get_all_lectures_id(course_link)
@@ -180,7 +206,6 @@ def _redeem_courses_ui(
             return
 
 
-
 def redeem_courses_ui(
         driver,
         settings: Settings,
@@ -188,6 +213,8 @@ def redeem_courses_ui(
         tutorialbar_enabled: bool,
         discudemy_enabled: bool,
         max_pages: Union[int, None],
+        scrape_urls_from_file: bool,
+        filename: str
 ) -> None:
     """
     Wrapper of _redeem_courses so we always close browser on completion
@@ -209,7 +236,7 @@ def redeem_courses_ui(
             max_pages,
             driver
         )
-        _redeem_courses_ui(driver, settings, scrapers)
+        _redeem_courses_ui(driver, settings, scrapers, scrape_urls_from_file, filename)
     except Exception as e:
         logger.error(f"Exception in redeem courses: {e}")
     finally:
