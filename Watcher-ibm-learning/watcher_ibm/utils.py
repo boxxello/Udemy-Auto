@@ -1,3 +1,4 @@
+import json
 import os
 import random
 
@@ -30,4 +31,13 @@ def read_file(file_name):
 def generate_9_digit_random_number()->int:
     n = 9
     return int(''.join(["{}".format(random.randint(0, 9)) for _ in range(0, n)]))
+
+def validateJSON(jsonData: str)->tuple:
+    try:
+        loaded_json=json.loads(jsonData)
+    except ValueError:
+        return False, None
+    except BaseException:
+        return False, None
+    return True, loaded_json
 

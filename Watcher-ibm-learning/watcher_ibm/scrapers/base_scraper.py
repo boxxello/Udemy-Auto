@@ -126,6 +126,8 @@ class BaseScraper(ABC):
                 return 1, matching
             else:
                 return None, None
+
+
     @staticmethod
     async def  validate_course_url(url) -> Optional[str]:
         """

@@ -1,4 +1,5 @@
 from selenium import webdriver
+from selenium.webdriver import DesiredCapabilities
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.core.utils import ChromeType
@@ -34,13 +35,15 @@ class DriverManager:
 
         :return: None
         """
-
+        caps = DesiredCapabilities.CHROME
+        # as per latest docs
+        caps['goog:loggingPrefs'] = {'performance': 'ALL'}
         if self.browser.lower() in VALID_CHROME_STRINGS:
             if self.is_ci_build:
                 self.options = self._build_ci_options_chrome()
 
-            self.driver = webdriver.Chrome( ChromeDriverManager().install(), options=self.options
-            )
+            self.driver = webdriver.Chrome( ChromeDriverManager().install(), options=self.options, desired_capabilities=caps)
+
 
 
         elif self.browser.lower() in VALID_CHROMIUM_STRINGS:

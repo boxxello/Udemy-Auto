@@ -27,15 +27,14 @@ def load_logging_config() -> None:
 
     # File handler
     file_handler = CustomFileHandler()
-    log_format = "%(asctime)s - %(name)s - %(levelname)s - %(module)s : %(message)s"
+    log_format = "%(asctime)s::%(name)s::%(levelname)s ::%(module)s: %(message)s"
     formatter = logging.Formatter(fmt=log_format)
     file_handler.setFormatter(formatter)
     my_logger.addHandler(file_handler)
 
     # Basic format for streamhandler
     stream_handler = logging.StreamHandler()
-    simple_format = logging.Formatter(fmt="%(message)s")
-    stream_handler.setFormatter(simple_format)
+    stream_handler.setFormatter(formatter)
     my_logger.addHandler(stream_handler)
 
 

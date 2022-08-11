@@ -1,12 +1,13 @@
 import json
 import os
 import random
+import re
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 import requests
 from price_parser import Price
@@ -20,7 +21,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from watcher_ibm.exceptions import LoginException, RobotException
 from watcher_ibm.logging import get_logger
 from watcher_ibm.settings import Settings
-from watcher_ibm.utils import get_app_dir
+from watcher_ibm.utils import get_app_dir, validateJSON
 
 logger = get_logger()
 
@@ -76,7 +77,6 @@ class UdemyStatus(Enum):
     UNWANTED_CATEGORY = "UNWANTED_CATEGORY"
 
 
-
 class UdemyActionsUI:
     """
     Contains any logic related to interacting with udemy website
@@ -112,7 +112,8 @@ class UdemyActionsUI:
     #	/api-2.0/users/me/subscribed-courses/359550/quizzes/95420/user-attempted-quizzes/latest/
     # https://ibm-learning.udemy.com/course/mastering-object-oriented-design-in-java/learn/quiz/95416#overview
     LAST_ID_QUIZ = "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/{course_id}/quizzes/{quiz_id]/user-attempted-quizzes/latest"
-
+    URL_COURSE_NO_API = "https://ibm-learning.udemy.com/course/{course_id}/"
+    URL_QUIZ_NOAPI="https://ibm-learning.udemy.com/course/{url_no_id}/learn/quiz/{assessment_id}#overview"
     def __init__(self, driver: WebDriver, settings: Settings, cookie_file_name: str = ".cookie"):
 
         self.driver = driver
@@ -370,17 +371,17 @@ class UdemyActionsUI:
 
     def _get_course_id(self, url: str):
         self.driver.get(url)
-        add_to_cart_xpath = (
+        dummy_elm_xpath = (
             "//div[starts-with(@class, 'ud-app-loader')][@data-module-args]"
         )
         try:
             dummy_element = (
                 WebDriverWait(self.driver, 10)
-                .until(EC.presence_of_element_located((By.XPATH, add_to_cart_xpath))))
+                .until(EC.presence_of_element_located((By.XPATH, dummy_elm_xpath))))
         except TimeoutException:
             return None
         else:
-            dummy_element = self.driver.find_elements_by_xpath(add_to_cart_xpath)
+            dummy_element = self.driver.find_elements_by_xpath(dummy_elm_xpath)
             for x in dummy_element:
                 if x.get_attribute("data-module-args") is not None:
                     attr = x.get_attribute("data-module-args")
@@ -670,6 +671,7 @@ class UdemyActionsUI:
             #             f"Cookies in request {response.cookies}\n\n"
             #             f"")
             logger.info(f"{response.status_code} - {response.text}")
+
     @staticmethod
     def _build_json_complete_part_quiz(x: json):
         # mapping number to character
@@ -682,7 +684,167 @@ class UdemyActionsUI:
         print(json_to_ret)
         return json_to_ret
 
+    def _solve_first_quiz_with_driver(self, course_id: int, x: json):
+        self.driver.get(self.URL_COURSE_NO_API.format(course_id=course_id))
+        dummy_elm_xpath = (
+            "//div[starts-with(@class, 'ud-app-loader')][@data-module-args]"
+        )
+        try:
+            dummy_element = (
+                WebDriverWait(self.driver, 10)
+                .until(EC.presence_of_element_located((By.XPATH, dummy_elm_xpath))))
+        except TimeoutException:
+            return None
+        current_url = self.driver.current_url
+        if url_to_use:= self.validate_basic_url(current_url):
+            url_of_quiz=self.URL_QUIZ_NOAPI.format(url_no_id=url_to_use,assessment_id=x['assessment_initial_id'])
+            self.driver.get(url_of_quiz)
+            logger.info(f"Found quiz url {url_of_quiz}")
+            try:
+                resume_play_quiz_btn = "//button[@data-purpose='start-or-resume-quiz']"
+                not_found_resume="//div[contains(@class, 'results-page--results-page')]"
+                try:
 
+                    WebDriverWait(self.driver, 10).until(
+                        EC.element_to_be_clickable((By.XPATH, resume_play_quiz_btn))
+                    ).click()
+
+                except TimeoutException:
+                    logger.warning("couldn't find resume button, already completed quiz")
+                    WebDriverWait(self.driver, 10).until(
+                        EC.element_to_be_clickable((By.XPATH, not_found_resume))
+                    ).click()
+                    return True
+                try:
+                    locale_xpath_ul_resp = "//ul[@aria-labelledby='question-prompt']"
+                    menu_items = WebDriverWait(self.driver, 10).until(
+                        EC.presence_of_element_located((By.XPATH, locale_xpath_ul_resp))
+                    )
+                    items = self.driver.find_element_by_xpath(locale_xpath_ul_resp)
+                except TimeoutException:
+                    logger.error("TimeoutException, couldn't find quiz menu/answers")
+                    return None
+
+                ul_elements=items.find_elements_by_tag_name('li')
+                # logger.debug(ul_elements)
+                correct_response = x.get('correct_response')
+                print(correct_response)
+                lst_of_correct_responses = []
+                for y in correct_response:
+                    ord_of_char = ord(y)
+                    reset_to_0=ord_of_char-97
+                    lst_of_correct_responses.append(reset_to_0)
+                # regex_extract=r'[a-zA-Z]+'
+                # correct_response_lst = re.findall(regex_extract, correct_response)
+                # print(correct_response_lst)
+                for idx,x in enumerate(ul_elements):
+                    if idx in lst_of_correct_responses:
+                        x.click()
+                #data-purpose="next-question-button"
+                #get last entry of console logs
+                last_entry = self.driver.get_log('performance')[-1]
+                last_timestamp=last_entry['timestamp']
+                print(last_timestamp)
+                try:
+                    next_question_btn = "//button[@data-purpose='next-question-button']"
+                    WebDriverWait(self.driver, 10).until(
+                        EC.element_to_be_clickable((By.XPATH, next_question_btn))
+                    ).click()
+                except TimeoutException:
+                    logger.error(f"TimeoutException - couldn't find next button")
+                    return None
+
+
+                filtered_logs = [x for x in self.driver.get_log('performance') if x['timestamp'] > last_timestamp]
+                lst_of_logs=[]
+                for x in filtered_logs:
+                    for k,v in x.items():
+                        if (json_dict:=validateJSON(v))[0]:
+                            for x,y in json_dict[1].items():
+                                if type(y) is dict:
+                                    if y['method']=='Network.requestWillBeSent':
+                                            if y['params']['request']['method']=='POST':
+                                                lst_of_logs.append(y['params']['request']['url'])
+                #check with validate_assessment_url function if the url in list lst_of_logs
+                non_duplicate_lst = list(set(lst_of_logs))
+                lst_of_assessments_ids=[x for x in non_duplicate_lst if self.validate_assessment_url(x)]
+
+                if len(lst_of_assessments_ids)>1:
+                    logger.error("Something went wrong, it was supposed to be a lst of ids of length=1")
+                    return None
+                else:
+                    return lst_of_assessments_ids[0]
+
+            except TimeoutException as e:
+                logger.error("Could not find some of the buttons to quiz")
+                logger.warning(e)
+
+                return None
+    # oneliner up
+    # def _get_log(self, _last_timestamp):
+    #     last_timestamp = _last_timestamp
+    #     entries = self.driver.get_log("performance")
+    #     filtered = []
+    #
+    #     for entry in entries:
+    #         # check the logged timestamp against the
+    #         # stored timestamp
+    #         if entry["timestamp"] > _last_timestamp:
+    #             filtered.append(entry)
+    #
+    #             # save the last timestamp only if newer
+    #             # in this set of logs
+    #             if entry["timestamp"] > last_timestamp:
+    #                 last_timestamp = entry["timestamp"]
+    #
+    #     return filtered
+    @staticmethod
+    def validate_assessment_url(url) -> Optional[str]:
+        """
+        Validates the url passed in, if it is a valid url for the udemy course then returns the url
+        :param str url: url to validate
+        :return: url if valid else None
+        """
+        if url is None:
+            return None
+        url_pattern_basic_url = "^https:\/\/(www\.)?ibm-learning\.udemy\.com\/api-2\.0\/users\/me\/subscribed-courses\/\d+\/user-attempted-quizzes\/(?P<assessment_id_n>\d+)\/assessment-answers\/?$"
+        # https://regex101.com/r/ngK7fj/1
+        matches = regex.search(url_pattern_basic_url, url, flags=(regex.M))
+        if matches:
+            assessment_id_n = matches.group('assessment_id_n')
+            return assessment_id_n
+        return None
+
+    @staticmethod
+    def validate_basic_url(url) -> Optional[str]:
+        """
+        Validates the url passed in, if it is a valid url for the udemy course then returns the url
+        :param str url: url to validate
+        :return: url if valid else None
+        """
+        if url is None:
+            return None
+        url_pattern_basic_url = "^https:\/\/(www\.)?ibm-learning\.udemy\.com\/course\/(?P<important_part>.+[^\/])\/learn\/(?:(quiz)|(lecture))\/\d+#overview$"
+        # https://regex101.com/r/qCRORj/1
+        matches = regex.search(url_pattern_basic_url, url, flags=(regex.M))
+        if matches:
+            cs_url_no_id = matches.group('important_part')
+            return cs_url_no_id
+        return None
+
+
+    @staticmethod
+    async def validate_quiz_url(url) -> Optional[str]:
+        if url is None:
+            return None
+        url_pattern_quiz = r"^https:\/\/(www\.)?ibm-learning\.udemy\.com\/course\/.+[^\/]\/learn\/quiz\/\d+#overview$"
+        # https://regex101.com/r/XGiyCw/1
+        matching = re.match(url_pattern_quiz, url, flags=(re.IGNORECASE | re.M))
+        if matching is not None:
+            matching = matching.group()
+            return matching
+        else:
+            return None
 
 
     def _solve_quiz(self, course_id: int):
@@ -692,13 +854,24 @@ class UdemyActionsUI:
         new_session.headers.update({"Accept": "application/json"})
         new_session.headers.update({"authority": "ibm-learning.udemy.com"})
         assessment_lst = self._get_assessments(course_id)
+        lst_test= []
+
+        assessment_id=None
         for idx, x in enumerate(assessment_lst):
+
             print(f"Quiz idx: {idx}\n{x} \n\n")
-            req_json = self._build_json_complete_part_quiz(x)
-            print(
-                f"Sending to {self.URL_SEND_RESPONSE.format(course_id=course_id, quiz_id=x['assessment_initial_id'])} what is {req_json}")
-            response = new_session.post(
-                self.URL_SEND_RESPONSE.format(course_id=course_id, quiz_id=x['assessment_initial_id']),
-                json=req_json)
-            print(response.status_code)
-            print(response.text)
+            if not x.get('assessment_initial_id') in lst_test:
+                logger.info(f"Found the first assessment real id for {x.get('assessment_initial_id')}")
+                assessment_id=self._solve_first_quiz_with_driver(course_id, x)
+                lst_test.append(x)
+            else:
+                if assessment_id:
+
+                    req_json = self._build_json_complete_part_quiz(x)
+                    print(
+                        f"Sending to {self.URL_SEND_RESPONSE.format(course_id=course_id, quiz_id=assessment_id)} what is {req_json}")
+                    response = new_session.post(
+                        self.URL_SEND_RESPONSE.format(course_id=course_id, quiz_id=assessment_id),
+                        json=req_json)
+                    print(response.status_code)
+                    print(response.text)
