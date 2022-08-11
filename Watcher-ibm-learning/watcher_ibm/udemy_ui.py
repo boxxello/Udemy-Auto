@@ -105,15 +105,16 @@ class UdemyActionsUI:
 
     QUIZ_URL = "https://ibm-learning.udemy.com/api-2.0/courses/{}/subscriber-curriculum-items/?page_size=1400&fields[lecture]=title,object_index,is_published,sort_order,created,asset,supplementary_assets,is_free&fields[quiz]=title,object_index,is_published,sort_order,type&fields[practice]=title,object_index,is_published,sort_order&fields[chapter]=title,object_index,is_published,sort_order&fields[asset]=title,filename,asset_type,status,time_estimation,is_external&caching_intent=Truefields[course]=title,url,context_info,primary_category,primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,num_subscribers,num_quizzes,num_lectures,completion_ratio"
     RESPONSES_URL = "https://ibm-learning.udemy.com/api-2.0/quizzes/{}/assessments/?version=1&page_size=1400&fields[assessment]=id,assessment_type,prompt,correct_response,section,question_plain,related_lectures"
-    COMPLETED_QUIZ_IDS = "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/359550/progress/?fields[course]=completed_lecture_ids,completed_quiz_ids,last_seen_page,completed_assignment_ids,first_completion_time"
+    COMPLETED_QUIZ_IDS = "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/359550/progress/?page_size=1400&fields[course]=completed_lecture_ids,completed_quiz_ids,last_seen_page,completed_assignment_ids,first_completion_time"
     BOH = "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/359550/quizzes/95416/?draft=false&fields[quiz]=id,type,title,description,object_index,num_assessments,version,duration,is_draft,pass_percent,changelog"
     URL_SEND_RESPONSE = (
         "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/{course_id}/user-attempted-quizzes/{quiz_id}/assessment-answers/")
     #	/api-2.0/users/me/subscribed-courses/359550/quizzes/95420/user-attempted-quizzes/latest/
     # https://ibm-learning.udemy.com/course/mastering-object-oriented-design-in-java/learn/quiz/95416#overview
-    LAST_ID_QUIZ = "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/{course_id}/quizzes/{quiz_id]/user-attempted-quizzes/latest"
+    LAST_ID_QUIZ = "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/{course_id}/quizzes/{quiz_id}/user-attempted-quizzes/latest"
     URL_COURSE_NO_API = "https://ibm-learning.udemy.com/course/{course_id}/"
     URL_QUIZ_NOAPI="https://ibm-learning.udemy.com/course/{url_no_id}/learn/quiz/{assessment_id}#overview"
+    URL_GET_ALREADY_DONE_ASSESSMENTS="https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/{course_id}/user-attempted-quizzes/"
     def __init__(self, driver: WebDriver, settings: Settings, cookie_file_name: str = ".cookie"):
 
         self.driver = driver
@@ -618,6 +619,7 @@ class UdemyActionsUI:
         :param int course_id: Id of the course to get the assessment ids of
         :return: list of assessment ids
         """
+        logger.info(f"CALLING FUNCTION GET_ASSESSMENT_IDS with url {self.QUIZ_URL.format(course_id)}")
         assessment_json = self.session.get(self.QUIZ_URL.format(course_id)).json()
 
         results = assessment_json['results']
@@ -637,6 +639,7 @@ class UdemyActionsUI:
         if assessment_lst_ids:
             assessment_lst = []
             for x in assessment_lst_ids:
+                logger.info(f"CALLING FUNCTION _get_assessments with url {self.RESPONSES_URL.format(x)}")
                 assessment_json = self.session.get(self.RESPONSES_URL.format(x)).json()
                 results = assessment_json['results']
 
@@ -681,7 +684,7 @@ class UdemyActionsUI:
 
         json_to_ret = {"assessment_id": x.get('id'), "response": correct_response,
                        "duration": rand_duration}
-        print(json_to_ret)
+        logger.info(json_to_ret)
         return json_to_ret
 
     def _solve_first_quiz_with_driver(self, course_id: int, x: json):
@@ -812,6 +815,7 @@ class UdemyActionsUI:
         matches = regex.search(url_pattern_basic_url, url, flags=(regex.M))
         if matches:
             assessment_id_n = matches.group('assessment_id_n')
+            logger.info(f"RETURNING THIS {assessment_id_n}")
             return assessment_id_n
         return None
 
@@ -854,24 +858,43 @@ class UdemyActionsUI:
         new_session.headers.update({"Accept": "application/json"})
         new_session.headers.update({"authority": "ibm-learning.udemy.com"})
         assessment_lst = self._get_assessments(course_id)
-        lst_test= []
+
 
         assessment_id=None
+
         for idx, x in enumerate(assessment_lst):
-
-            print(f"Quiz idx: {idx}\n{x} \n\n")
-            if not x.get('assessment_initial_id') in lst_test:
-                logger.info(f"Found the first assessment real id for {x.get('assessment_initial_id')}")
-                assessment_id=self._solve_first_quiz_with_driver(course_id, x)
-                lst_test.append(x)
+            assessment_lst_already_done = self._get_already_done_assessments(course_id, x.get('assessment_initial_id'))
+            if assessment_lst_already_done is None:
+                print(f"Quiz idx: {idx}\n{x} \n\n")
+                if not x.get('assessment_initial_id') :
+                    logger.info(f"Found the first assessment real id for {x.get('assessment_initial_id')}")
+                    assessment_id=self._solve_first_quiz_with_driver(course_id, x)
             else:
-                if assessment_id:
-
+                logger.info(f"Else, sending xhr req")
+                if assessment_lst_already_done:
                     req_json = self._build_json_complete_part_quiz(x)
-                    print(
-                        f"Sending to {self.URL_SEND_RESPONSE.format(course_id=course_id, quiz_id=assessment_id)} what is {req_json}")
+                    logger.info(
+                        f"Sending to {self.URL_SEND_RESPONSE.format(course_id=course_id, quiz_id=assessment_lst_already_done)} what is {req_json}")
                     response = new_session.post(
-                        self.URL_SEND_RESPONSE.format(course_id=course_id, quiz_id=assessment_id),
+                        self.URL_SEND_RESPONSE.format(course_id=course_id, quiz_id=assessment_lst_already_done),
                         json=req_json)
-                    print(response.status_code)
-                    print(response.text)
+                    logger.info(f"Response is {response.status_code}, text is {response.text}")
+    def _get_completed_assessments(self, course_id: int)->List:
+
+        response = self.session.get(self.COMPLETED_QUIZ_IDS.format(course_id=course_id))
+        if response.status_code == 200 or response.status_code == 201:
+            json_resp = response.json()
+            return json_resp.get('completed_assignment_ids')
+    def _get_already_done_assessments(self, course_id, assessment_id_fake)->list[str]:
+        print(self.LAST_ID_QUIZ.format(course_id=course_id, quiz_id=assessment_id_fake))
+        response = self.session.get(self.LAST_ID_QUIZ.format(course_id=course_id, quiz_id=assessment_id_fake))
+
+        if response.status_code == 200 or response.status_code == 201:
+            logger.info("resp status code is 200/201 for the assessment")
+            resp_json = response.json()
+            if resp_json.get('_class') =='user_attempted_quiz':
+                logger.info(f"returning assessment id {resp_json.get('id')}")
+                return resp_json.get('id')
+
+
+
