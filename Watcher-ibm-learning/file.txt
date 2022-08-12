@@ -1,1 +1,1 @@
-https://ibm-learning.udemy.com/course/java-from-beginner-to-expert/
+https://ibm-learning.udemy.com/course/java-message-service-jms-fundamentals/

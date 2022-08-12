@@ -29,7 +29,6 @@ class Settings:
         self._cookies_path = os.path.join(get_app_dir(), ".cookie")
         self._should_store_email = False
         self._should_store_password = False
-        self.is_ci_build = strtobool(os.environ.get("CI_TEST", "False"))
         if delete_settings:
             self.delete_settings()
         if delete_cookie:
@@ -42,13 +41,11 @@ class Settings:
 
         :return:
         """
-        if self.is_ci_build:
-            self._load_ci_settings()
-        else:
-            settings = self._load_user_settings()
-            if settings is None:
-                self._generate_settings()
-                self._save_settings()
+
+        settings = self._load_user_settings()
+        if settings is None:
+            self._generate_settings()
+            self._save_settings()
 
     def _load_ci_settings(self):
         """

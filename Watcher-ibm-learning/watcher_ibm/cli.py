@@ -49,7 +49,7 @@ def run(
     print("ci arrivo")
 
     if browser:
-        dm = DriverManager(browser=browser, is_ci_build=settings.is_ci_build)
+        dm = DriverManager(browser=browser)
         print("ci arrivo browser")
         redeem_courses_ui(
             dm.driver,
@@ -59,17 +59,7 @@ def run(
             scrape_urls_from_file,
             filename
         )
-    else:
-        browser = "chrome"
-        dm = DriverManager(browser=browser, is_ci_build=settings.is_ci_build)
-        print("ci arrivo no browser")
-        redeem_courses(
-            dm.driver,
-            settings,
-            udemy_scraper_enabled,
-            max_pages,
 
-        )
 
 
 def parse_args() -> Namespace:

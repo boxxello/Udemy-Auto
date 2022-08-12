@@ -22,11 +22,10 @@ ALL_VALID_BROWSER_STRINGS = VALID_CHROME_STRINGS.union(VALID_CHROMIUM_STRINGS)
 
 
 class DriverManager:
-    def __init__(self, browser: str, is_ci_build: bool = False):
+    def __init__(self, browser: str):
         self.driver = None
         self.options = None
         self.browser = browser
-        self.is_ci_build = is_ci_build
         self._init_driver()
 
     def _init_driver(self):
@@ -39,8 +38,6 @@ class DriverManager:
         # as per latest docs
         caps['goog:loggingPrefs'] = {'performance': 'ALL'}
         if self.browser.lower() in VALID_CHROME_STRINGS:
-            if self.is_ci_build:
-                self.options = self._build_ci_options_chrome()
 
             self.driver = webdriver.Chrome( ChromeDriverManager().install(), options=self.options, desired_capabilities=caps)
 
@@ -78,23 +75,4 @@ class DriverManager:
         self.driver.maximize_window()
 
 
-    @staticmethod
-    def _build_ci_options_chrome():
-        """
-        Build chrome options required to run in CI
 
-        :return:
-        """
-        # Having the user-agent with Headless param was always leading to robot check
-        user_agent = (
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 "
-            "Safari/537.36"
-        )
-        options = ChromeOptions()
-        # We need to run headless when using github CI
-        # options.add_argument("--headless")
-        options.add_argument("user-agent={0}".format(user_agent))
-        options.add_argument("accept-language=en-GB,en-US;q=0.9,en;q=0.8")
-        options.add_argument("--window-size=1325x744")
-        logger.info("This is a CI run")
-        return options

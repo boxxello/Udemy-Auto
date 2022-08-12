@@ -46,34 +46,37 @@ def _redeem_courses_ui(
     udemy_actions._get_already_rolled_courses()
     loop = asyncio.get_event_loop()
 
+
+    logger.info("launching the scrapers")
+
+    if scrape_urls_from_file and filename:
+        udemy_course_links = read_file(filename)
+        logger.info(f"LINKS FROM FILE {udemy_course_links}")
+        udemy_course_ids=[]
+        for x in udemy_course_links:
+            crs_id=udemy_actions._get_course_id(x)
+            if crs_id is not None and crs_id not in udemy_course_ids:
+                udemy_course_ids.append(crs_id)
+        if len(udemy_course_ids)>0:
+            udemy_course_links = []
+            for x in udemy_course_ids:
+                udemy_course_links.append(udemy_actions.URL_TO_COURSE_ID.format(x))
+        logger.info(f"Real course links {udemy_course_links}")
+
+
+    elif scrape_urls_from_file and not filename:
+        logger.error("this isn't a possible choice.")
+        return
+    else:
+        udemy_course_links = loop.run_until_complete(scrapers.run())
+
+
     while True:
-        logger.info("launching the scrapers")
-
-        if scrape_urls_from_file and filename:
-            udemy_course_links = read_file(filename)
-            print(udemy_course_links)
-            udemy_course_ids=[]
-            for x in udemy_course_links:
-                crs_id=udemy_actions._get_course_id(x)
-                if crs_id is not None and crs_id not in udemy_course_ids:
-                    udemy_course_ids.append(crs_id)
-            if len(udemy_course_ids)>0:
-                udemy_course_links = []
-                for x in udemy_course_ids:
-                    udemy_course_links.append(udemy_actions.URL_TO_COURSE_ID.format(x))
-            print(udemy_course_links)
-
-
-        elif scrape_urls_from_file and not filename:
-            logger.error("this isn't a possible choice.")
-            return
-        else:
-            udemy_course_links = loop.run_until_complete(scrapers.run())
-
         if udemy_course_links:
             for course_link in set(
                     udemy_course_links
             ):  # Cast to set to remove duplicate links
+
                 try:
                     cs_link, course_id = udemy_actions._get_course_link_from_redirect(course_link)
                     logger.debug(course_id)
@@ -104,6 +107,7 @@ def _redeem_courses_ui(
 
                         else:
                             logger.info("Course was already finished")
+                            udemy_course_links.remove(course_link)
 
 
 
@@ -123,11 +127,6 @@ def _redeem_courses_ui(
                     return
                 except Exception as e:
                     logger.error(f"Unexpected exception: {e}")
-                finally:
-                    if settings.is_ci_build:
-                        logger.info("We have attempted to subscribe to 1 udemy course")
-                        logger.info("Ending test")
-                        return
         else:
             udemy_actions.stats.table()
             logger.info("All scrapers complete")
