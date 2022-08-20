@@ -330,7 +330,7 @@ class UdemyActionsUI:
 
         except TimeoutException:
             logger.error("Course is already purchased")
-            return UdemyStatus.ALREADY_ENROLLED.value
+
         else:
             # Check if already enrolled. If add to cart is available we have not yet enrolled
             logger.info("Checking if already enrolled")
@@ -342,8 +342,8 @@ class UdemyActionsUI:
 
             logger.info(f"Successfully enrolled in: '{course_name}'")
             self.stats.enrolled += 1
-            cs_link, course_id = self._get_course_link_from_redirect(url)
-            return UdemyStatus.ENROLLED.value, cs_link, course_id
+        cs_link, course_id = self._get_course_link_from_redirect(url)
+        return UdemyStatus.ALREADY_ENROLLED.value, cs_link, course_id
 
     def _find_all_lectures(self, first_link_to) -> List[str]:
         logger.info(f"Finding all lectures in: '{first_link_to}'")
