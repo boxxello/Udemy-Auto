@@ -641,13 +641,13 @@ class UdemyActionsUI:
             for x in assessment_lst_ids:
                 logger.info(f"CALLING FUNCTION _get_assessments with url {self.RESPONSES_URL.format(x)}")
                 assessment_json = self.session.get(self.RESPONSES_URL.format(x)).json()
-                results = assessment_json['results']
+                results = assessment_json.get('results')
 
                 for y in results:
                     y.update({'assessment_initial_id': x})
-                    if y['_class'] != 'lecture':
+                    if y.get('_class') != 'lecture':
 
-                        if y['_class'] == 'assessment':
+                        if y.get('_class') == 'assessment':
                             assessment_lst.append(y)
             for y in assessment_lst:
                 logger.info(f"Found assessment id {y['id']}, quiz id {y['assessment_initial_id']}")
@@ -697,92 +697,94 @@ class UdemyActionsUI:
                 WebDriverWait(self.driver, 10)
                 .until(EC.presence_of_element_located((By.XPATH, dummy_elm_xpath))))
         except TimeoutException:
+            logger.warning("Couldn't find dummy element to solve quiz")
             return None
-        current_url = self.driver.current_url
-        if url_to_use:= self.validate_basic_url(current_url):
-            url_of_quiz=self.URL_QUIZ_NOAPI.format(url_no_id=url_to_use,assessment_id=x['assessment_initial_id'])
-            self.driver.get(url_of_quiz)
-            logger.info(f"Found quiz url {url_of_quiz}")
-            try:
-                resume_play_quiz_btn = "//button[@data-purpose='start-or-resume-quiz']"
-                not_found_resume="//div[contains(@class, 'results-page--results-page')]"
+        else:
+            current_url = self.driver.current_url
+            if url_to_use:= self.validate_basic_quiz_url(current_url):
+                url_of_quiz=self.URL_QUIZ_NOAPI.format(url_no_id=url_to_use,assessment_id=x['assessment_initial_id'])
+                self.driver.get(url_of_quiz)
+                logger.info(f"Found quiz url {url_of_quiz}")
                 try:
+                    resume_play_quiz_btn = "//button[@data-purpose='start-or-resume-quiz']"
+                    not_found_resume="//div[contains(@class, 'results-page--results-page')]"
+                    try:
 
-                    WebDriverWait(self.driver, 10).until(
-                        EC.element_to_be_clickable((By.XPATH, resume_play_quiz_btn))
-                    ).click()
+                        WebDriverWait(self.driver, 10).until(
+                            EC.element_to_be_clickable((By.XPATH, resume_play_quiz_btn))
+                        ).click()
 
-                except TimeoutException:
-                    logger.warning("couldn't find resume button, already completed quiz")
-                    WebDriverWait(self.driver, 10).until(
-                        EC.element_to_be_clickable((By.XPATH, not_found_resume))
-                    ).click()
-                    return True
-                try:
-                    locale_xpath_ul_resp = "//ul[@aria-labelledby='question-prompt']"
-                    menu_items = WebDriverWait(self.driver, 10).until(
-                        EC.presence_of_element_located((By.XPATH, locale_xpath_ul_resp))
-                    )
-                    items = self.driver.find_element_by_xpath(locale_xpath_ul_resp)
-                except TimeoutException:
-                    logger.error("TimeoutException, couldn't find quiz menu/answers")
+                    except TimeoutException:
+                        logger.warning("couldn't find resume button, already completed quiz")
+                        WebDriverWait(self.driver, 10).until(
+                            EC.element_to_be_clickable((By.XPATH, not_found_resume))
+                        ).click()
+                        return True
+                    try:
+                        locale_xpath_ul_resp = "//ul[@aria-labelledby='question-prompt']"
+                        menu_items = WebDriverWait(self.driver, 10).until(
+                            EC.presence_of_element_located((By.XPATH, locale_xpath_ul_resp))
+                        )
+                        items = self.driver.find_element_by_xpath(locale_xpath_ul_resp)
+                    except TimeoutException:
+                        logger.error("TimeoutException, couldn't find quiz menu/answers")
+                        return None
+
+                    ul_elements=items.find_elements_by_tag_name('li')
+                    # logger.debug(ul_elements)
+                    correct_response = x.get('correct_response')
+                    print(correct_response)
+                    lst_of_correct_responses = []
+                    for y in correct_response:
+                        ord_of_char = ord(y)
+                        reset_to_0=ord_of_char-97
+                        lst_of_correct_responses.append(reset_to_0)
+                    # regex_extract=r'[a-zA-Z]+'
+                    # correct_response_lst = re.findall(regex_extract, correct_response)
+                    # print(correct_response_lst)
+                    for idx,x in enumerate(ul_elements):
+                        if idx in lst_of_correct_responses:
+                            x.click()
+                    #data-purpose="next-question-button"
+                    #get last entry of console logs
+                    last_entry = self.driver.get_log('performance')[-1]
+                    last_timestamp=last_entry['timestamp']
+                    print(last_timestamp)
+                    try:
+                        next_question_btn = "//button[@data-purpose='next-question-button']"
+                        WebDriverWait(self.driver, 10).until(
+                            EC.element_to_be_clickable((By.XPATH, next_question_btn))
+                        ).click()
+                    except TimeoutException:
+                        logger.error(f"TimeoutException - couldn't find next button")
+                        return None
+
+
+                    filtered_logs = [x for x in self.driver.get_log('performance') if x['timestamp'] > last_timestamp]
+                    lst_of_logs=[]
+                    for x in filtered_logs:
+                        for k,v in x.items():
+                            if (json_dict:=validateJSON(v))[0]:
+                                for x,y in json_dict[1].items():
+                                    if type(y) is dict:
+                                        if y['method']=='Network.requestWillBeSent':
+                                                if y['params']['request']['method']=='POST':
+                                                    lst_of_logs.append(y['params']['request']['url'])
+                    #check with validate_assessment_url function if the url in list lst_of_logs
+                    non_duplicate_lst = list(set(lst_of_logs))
+                    lst_of_assessments_ids=[x for x in non_duplicate_lst if self.validate_assessment_url(x)]
+
+                    if len(lst_of_assessments_ids)>1:
+                        logger.error("Something went wrong, it was supposed to be a lst of ids of length=1")
+                        return None
+                    else:
+                        return lst_of_assessments_ids[0]
+
+                except TimeoutException as e:
+                    logger.error("Could not find some of the buttons to quiz")
+                    logger.warning(e)
+
                     return None
-
-                ul_elements=items.find_elements_by_tag_name('li')
-                # logger.debug(ul_elements)
-                correct_response = x.get('correct_response')
-                print(correct_response)
-                lst_of_correct_responses = []
-                for y in correct_response:
-                    ord_of_char = ord(y)
-                    reset_to_0=ord_of_char-97
-                    lst_of_correct_responses.append(reset_to_0)
-                # regex_extract=r'[a-zA-Z]+'
-                # correct_response_lst = re.findall(regex_extract, correct_response)
-                # print(correct_response_lst)
-                for idx,x in enumerate(ul_elements):
-                    if idx in lst_of_correct_responses:
-                        x.click()
-                #data-purpose="next-question-button"
-                #get last entry of console logs
-                last_entry = self.driver.get_log('performance')[-1]
-                last_timestamp=last_entry['timestamp']
-                print(last_timestamp)
-                try:
-                    next_question_btn = "//button[@data-purpose='next-question-button']"
-                    WebDriverWait(self.driver, 10).until(
-                        EC.element_to_be_clickable((By.XPATH, next_question_btn))
-                    ).click()
-                except TimeoutException:
-                    logger.error(f"TimeoutException - couldn't find next button")
-                    return None
-
-
-                filtered_logs = [x for x in self.driver.get_log('performance') if x['timestamp'] > last_timestamp]
-                lst_of_logs=[]
-                for x in filtered_logs:
-                    for k,v in x.items():
-                        if (json_dict:=validateJSON(v))[0]:
-                            for x,y in json_dict[1].items():
-                                if type(y) is dict:
-                                    if y['method']=='Network.requestWillBeSent':
-                                            if y['params']['request']['method']=='POST':
-                                                lst_of_logs.append(y['params']['request']['url'])
-                #check with validate_assessment_url function if the url in list lst_of_logs
-                non_duplicate_lst = list(set(lst_of_logs))
-                lst_of_assessments_ids=[x for x in non_duplicate_lst if self.validate_assessment_url(x)]
-
-                if len(lst_of_assessments_ids)>1:
-                    logger.error("Something went wrong, it was supposed to be a lst of ids of length=1")
-                    return None
-                else:
-                    return lst_of_assessments_ids[0]
-
-            except TimeoutException as e:
-                logger.error("Could not find some of the buttons to quiz")
-                logger.warning(e)
-
-                return None
     # oneliner up
     # def _get_log(self, _last_timestamp):
     #     last_timestamp = _last_timestamp
@@ -820,7 +822,7 @@ class UdemyActionsUI:
         return None
 
     @staticmethod
-    def validate_basic_url(url) -> Optional[str]:
+    def validate_basic_quiz_url(url) -> Optional[str]:
         """
         Validates the url passed in, if it is a valid url for the udemy course then returns the url
         :param str url: url to validate
@@ -828,8 +830,8 @@ class UdemyActionsUI:
         """
         if url is None:
             return None
-        url_pattern_basic_url = "^https:\/\/(www\.)?ibm-learning\.udemy\.com\/course\/(?P<important_part>.+[^\/])\/learn\/(?:(quiz)|(lecture))\/\d+#overview$"
-        # https://regex101.com/r/qCRORj/1
+        url_pattern_basic_url = "^https:\/\/(www\.)?ibm-learning\.udemy\.com\/course\/(?P<important_part>.+[^\/])\/learn\/(?:(quiz)|(lecture)|(practice))\/\d+.*$"
+        # https://regex101.com/r/gJkFFJ/1
         matches = regex.search(url_pattern_basic_url, url, flags=(regex.M))
         if matches:
             cs_url_no_id = matches.group('important_part')
