@@ -34,11 +34,16 @@ class DriverManager:
 
         :return: None
         """
-        caps = DesiredCapabilities.CHROME
-        # as per latest docs
-        caps['goog:loggingPrefs'] = {'performance': 'ALL'}
-        if self.browser.lower() in VALID_CHROME_STRINGS:
 
+        if self.browser.lower() in VALID_CHROME_STRINGS:
+            #enabling performance and request profiling
+            caps = DesiredCapabilities.CHROME
+            # as per latest docs
+            caps['goog:loggingPrefs'] = {'performance': 'ALL'}
+            #disabling the annoying chrome notification
+            self.options = webdriver.ChromeOptions()
+            self.options.add_experimental_option("useAutomationExtension", False)
+            self.options.add_experimental_option("excludeSwitches", ["enable-automation"])
             self.driver = webdriver.Chrome( ChromeDriverManager().install(), options=self.options, desired_capabilities=caps)
 
 

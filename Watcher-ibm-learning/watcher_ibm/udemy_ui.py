@@ -73,6 +73,7 @@ class UdemyStatus(Enum):
 
     ALREADY_ENROLLED = "ALREADY_ENROLLED"
     ENROLLED = "ENROLLED"
+    NOTUNROLLED = "NOTUNROLLED"
     EXPIRED = "EXPIRED"
     UNWANTED_LANGUAGE = "UNWANTED_LANGUAGE"
     UNWANTED_CATEGORY = "UNWANTED_CATEGORY"
@@ -330,8 +331,7 @@ class UdemyActionsUI:
             )
 
         except TimeoutException:
-            logger.error("Course is already purchased")
-
+            logger.info("Course is already purchased")
         else:
             # Check if already enrolled. If add to cart is available we have not yet enrolled
             logger.info("Checking if already enrolled")
@@ -343,7 +343,7 @@ class UdemyActionsUI:
 
             logger.info(f"Successfully enrolled in: '{course_name}'")
             self.stats.enrolled += 1
-        cs_link, course_id = self._get_course_link_from_redirect(url)
+        cs_link, course_id = self._get_course_link_wrapper(url)
         logger.info(f"Course id: {course_id} and link: {cs_link}")
         return UdemyStatus.ALREADY_ENROLLED.value, cs_link, course_id
 
@@ -572,9 +572,11 @@ class UdemyActionsUI:
         return is_robot
     def _get_course_link_wrapper(self, course_link):
         if (return_st:=self._get_course_link_from_redirect(course_link))[1]:
+
             return return_st[0], return_st[1]
-        elif (return_st:=self._get_course_id(course_link))[1]:
-            return self.REQUEST_LECTURES.format(return_st[1]), return_st[1]
+        elif (return_st:=self._get_course_id(course_link)):
+            return self.REQUEST_LECTURES.format(return_st), return_st
+
         raise CourseNotFoundException(course_link)
 
 

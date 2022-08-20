@@ -18,4 +18,7 @@ class CourseNotFoundException(Exception):
     """
        You have failed to find the course id
     """
-    pass
+
+    def getExitCode(self):
+        "meant to be overridden in subclass"
+        return -2

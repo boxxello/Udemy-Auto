@@ -16,6 +16,7 @@ from watcher_ibm import (
     UdemyStatus,
     exceptions,
 )
+from watcher_ibm.exceptions import CourseNotFoundException
 from watcher_ibm.logging import get_logger
 from watcher_ibm.utils import read_file
 
@@ -52,16 +53,18 @@ def _redeem_courses_ui(
     if scrape_urls_from_file and filename:
         udemy_course_links = read_file(filename)
         logger.info(f"LINKS FROM FILE {udemy_course_links}")
-        udemy_course_ids=[]
-        for x in udemy_course_links:
-            crs_id=udemy_actions._get_course_id(x)
-            if crs_id is not None and crs_id not in udemy_course_ids:
-                udemy_course_ids.append(crs_id)
-        if len(udemy_course_ids)>0:
-            udemy_course_links = []
-            for x in udemy_course_ids:
-                udemy_course_links.append(udemy_actions.URL_TO_COURSE_ID.format(x))
-        logger.info(f"Real course links {udemy_course_links}")
+        # udemy_course_ids=[]
+        # for x in udemy_course_links:
+        #     crs_id=udemy_actions._get_course_id(x)
+        #     logger.info(f"COURSE ID {crs_id}")
+        #     if crs_id is not None and crs_id not in udemy_course_ids:
+        #         udemy_course_ids.append(crs_id)
+        # logger.info(f"COURSE IDs {udemy_course_ids}")
+        # if len(udemy_course_ids)>0:
+        #     udemy_course_links = []
+        #     for x in udemy_course_ids:
+        #         udemy_course_links.append(udemy_actions.URL_TO_COURSE_ID.format(x))
+        # logger.info(f"Real course links {udemy_course_links}")
 
 
     elif scrape_urls_from_file and not filename:
@@ -76,16 +79,16 @@ def _redeem_courses_ui(
             for course_link in set(
                     udemy_course_links
             ):  # Cast to set to remove duplicate links
-
+                logger.info(f"All course links {udemy_course_links}")
                 try:
-                    cs_link, course_id = udemy_actions._get_course_link_wrapper(course_link)
-                    logger.debug(course_id)
-                    if not course_id:
-                        logger.info("Not in a rolled in course")
-                        status, cs_link,course_id = udemy_actions.enroll(course_link)
-                    else:
+                    try:
+                        cs_link, course_id = udemy_actions._get_course_link_wrapper(course_link)
                         logger.info("In the courses already rolled ")
                         status = UdemyStatus.ALREADY_ENROLLED.value
+                    except CourseNotFoundException:
+                        logger.info("Not in a rolled in course")
+                        status, cs_link, course_id = udemy_actions.enroll(course_link)
+                        pass
                     if status == UdemyStatus.ENROLLED.value or status == UdemyStatus.ALREADY_ENROLLED.value:
 
                         logger.info(f"Enrolled/Already enrolled in {cs_link}, trying to get it to finish")
@@ -104,7 +107,10 @@ def _redeem_courses_ui(
 
                             logger.info(f"Printing list of lectures of {cs_link}: {list_of_lectures_id}")
                             print(udemy_actions._send_completition_req(cs_link, list_of_lectures_id, course_id))
-
+                            course_details = udemy_actions._get_course_details(course_id)
+                            course_details_complt = course_details['completion_ratio']
+                            if course_details_complt == 100:
+                                udemy_course_links.remove(course_link)
                         else:
                             logger.info("Course was already finished")
                             udemy_course_links.remove(course_link)
