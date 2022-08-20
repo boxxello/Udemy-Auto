@@ -18,12 +18,11 @@ def get_app_dir() -> str:
         os.mkdir(app_dir)
     return app_dir
 
-def read_file(file_name):
+def read_urls_from_file(file_name):
     with open(file_name, "r") as f:
         lines= f.read().splitlines()
     list_of_urls = []
     for line in lines:
-
         if validators.url(line):
             list_of_urls.append(line)
     return list_of_urls

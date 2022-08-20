@@ -1,6 +1,3 @@
-https://ibm-learning.udemy.com/course/aws-certified-associate-architect-developer-sysops-admin/
-https://ibm-learning.udemy.com/course/linux-mastery/
-https://ibm-learning.udemy.com/course/aws-certified-cloud-practitioner/
-https://ibm-learning.udemy.com/course/new-comptia-a-2019-certification-1002-the-total-course/
-https://ibm-learning.udemy.com/course/learn-python-and-ethical-hacking-from-scratch/
-https://ibm-learning.udemy.com/course/learn-website-hacking-penetration-testing-from-scratch/
+https://ibm-learning.udemy.com/course/azure-certification-az-900-azure-fundamentals/
+https://ibm-learning.udemy.com/course/web-application-security-for-absolute-beginners-no-coding/
+https://ibm-learning.udemy.com/course/the-complete-servicenow-system-administrator-course/

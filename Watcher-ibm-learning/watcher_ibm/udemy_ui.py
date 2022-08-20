@@ -726,7 +726,8 @@ class UdemyActionsUI:
                 logger.info(f"Found quiz url {url_of_quiz}")
                 try:
                     resume_play_quiz_btn = "//button[@data-purpose='start-or-resume-quiz']"
-                    not_found_resume="//div[contains(@class, 'results-page--results-page')]"
+                    resume_play_quiz_btn_2= "//button[@data-purpose='start-quiz']"
+
                     try:
 
                         WebDriverWait(self.driver, 10).until(
@@ -736,9 +737,8 @@ class UdemyActionsUI:
                     except TimeoutException:
                         logger.warning("couldn't find resume button, already completed quiz")
                         WebDriverWait(self.driver, 10).until(
-                            EC.element_to_be_clickable((By.XPATH, not_found_resume))
+                            EC.element_to_be_clickable((By.XPATH, resume_play_quiz_btn_2))
                         ).click()
-                        return True
                     try:
                         locale_xpath_ul_resp = "//ul[@aria-labelledby='question-prompt']"
                         menu_items = WebDriverWait(self.driver, 10).until(
@@ -768,7 +768,6 @@ class UdemyActionsUI:
                     #get last entry of console logs
                     last_entry = self.driver.get_log('performance')[-1]
                     last_timestamp=last_entry['timestamp']
-                    print(last_timestamp)
                     try:
                         next_question_btn = "//button[@data-purpose='next-question-button']"
                         WebDriverWait(self.driver, 10).until(
@@ -879,25 +878,35 @@ class UdemyActionsUI:
         new_session.headers.update({"Accept": "application/json"})
         new_session.headers.update({"authority": "ibm-learning.udemy.com"})
         assessment_lst = self._get_assessments(course_id)
+        processes=[]
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            for idx, x in enumerate(assessment_lst):
+                assessment_lst_already_done = self._get_already_done_assessments(course_id, x.get('assessment_initial_id'))
+                if assessment_lst_already_done is None:
+                    print(f"Quiz idx: {idx}\n{x} \n\n")
+                    if not x.get('assessment_initial_id') in self._get_completed_assessments(course_id):
+                        logger.info(f"Found the first assessment real id for {x.get('assessment_initial_id')}")
+                        self._solve_first_quiz_with_driver(course_id, x)
+                else:
+                    logger.info(f"Else, sending xhr req")
+                    processes.append(
+                        executor.submit(self._solve_quiz_req_helper, new_session, course_id, assessment_lst_already_done, x))
 
+        logger.info("Solving the remaining assessments")
+        start=time.time()
+        for task in as_completed(processes):
+            logger.info(task.result())
+        logger.info(f'Time taken to complete {len(assessment_lst)} lectures: {time.time() - start}')
 
-        for idx, x in enumerate(assessment_lst):
-            assessment_lst_already_done = self._get_already_done_assessments(course_id, x.get('assessment_initial_id'))
-            if assessment_lst_already_done is None:
-                print(f"Quiz idx: {idx}\n{x} \n\n")
-                if not x.get('assessment_initial_id') in self._get_completed_assessments(course_id):
-                    logger.info(f"Found the first assessment real id for {x.get('assessment_initial_id')}")
-                    self._solve_first_quiz_with_driver(course_id, x)
-            else:
-                logger.info(f"Else, sending xhr req")
+    def _solve_quiz_req_helper(self, new_session, course_id, assessment_lst_already_done, x):
+        req_json = self._build_json_complete_part_quiz(x)
+        # logger.info(
+        #     f"Sending to {self.URL_SEND_RESPONSE.format(course_id=course_id, quiz_id=assessment_lst_already_done)} what is {req_json}")
+        response = new_session.post(
+            self.URL_SEND_RESPONSE.format(course_id=course_id, quiz_id=assessment_lst_already_done),
+            json=req_json)
+        return response.status_code, response.text
 
-                req_json = self._build_json_complete_part_quiz(x)
-                logger.info(
-                    f"Sending to {self.URL_SEND_RESPONSE.format(course_id=course_id, quiz_id=assessment_lst_already_done)} what is {req_json}")
-                response = new_session.post(
-                    self.URL_SEND_RESPONSE.format(course_id=course_id, quiz_id=assessment_lst_already_done),
-                    json=req_json)
-                logger.info(f"Response is {response.status_code}, text is {response.text}")
     def _get_completed_assessments(self, course_id: int)->List:
 
         response = self.session.get(self.COMPLETED_QUIZ_IDS.format(course_id=course_id))

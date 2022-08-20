@@ -18,7 +18,7 @@ from watcher_ibm import (
 )
 from watcher_ibm.exceptions import CourseNotFoundException
 from watcher_ibm.logging import get_logger
-from watcher_ibm.utils import read_file
+from watcher_ibm.utils import read_urls_from_file
 
 logger = get_logger()
 
@@ -41,6 +41,7 @@ def _redeem_courses_ui(
     :param ScraperManager scrapers:
     :return:
     """
+    list_of_error_links = []
     logger.info("Creating the UdemyActionsUI object")
     udemy_actions = UdemyActionsUI(driver, settings)
     udemy_actions.login()
@@ -51,7 +52,8 @@ def _redeem_courses_ui(
     logger.info("launching the scrapers")
 
     if scrape_urls_from_file and filename:
-        udemy_course_links = read_file(filename)
+        udemy_course_links = read_urls_from_file(filename)
+
         logger.info(f"LINKS FROM FILE {udemy_course_links}")
         # udemy_course_ids=[]
         # for x in udemy_course_links:
@@ -79,7 +81,7 @@ def _redeem_courses_ui(
             for course_link in set(
                     udemy_course_links
             ):  # Cast to set to remove duplicate links
-                logger.info(f"All course links {udemy_course_links}")
+
                 try:
                     try:
                         cs_link, course_id = udemy_actions._get_course_link_wrapper(course_link)
@@ -109,13 +111,14 @@ def _redeem_courses_ui(
                             print(udemy_actions._send_completition_req(cs_link, list_of_lectures_id, course_id))
                             course_details = udemy_actions._get_course_details(course_id)
                             course_details_complt = course_details['completion_ratio']
-                            if course_details_complt == 100:
-                                udemy_course_links.remove(course_link)
+                            if course_details_complt != 100:
+                                list_of_error_links.append(course_link)
+
                         else:
                             logger.info("Course was already finished")
-                            udemy_course_links.remove(course_link)
 
 
+                    udemy_course_links.remove(course_link)
 
 
                 except NoSuchElementException as e:
@@ -135,6 +138,8 @@ def _redeem_courses_ui(
                     logger.error(f"Unexpected exception: {e}")
         else:
             udemy_actions.stats.table()
+            if len(list_of_error_links) > 0:
+                logger.warning(f"List of error links: {list_of_error_links}")
             logger.info("All scrapers complete")
             return
 
