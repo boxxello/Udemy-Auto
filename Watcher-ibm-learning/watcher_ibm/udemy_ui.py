@@ -3,6 +3,7 @@ import os
 import random
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
@@ -18,7 +19,7 @@ from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from watcher_ibm.exceptions import LoginException, RobotException
+from watcher_ibm.exceptions import LoginException, RobotException, CourseNotFoundException
 from watcher_ibm.logging import get_logger
 from watcher_ibm.settings import Settings
 from watcher_ibm.utils import get_app_dir, validateJSON
@@ -306,7 +307,7 @@ class UdemyActionsUI:
         :param str url: URL of the course to redeem
         :return: A string detailing course status
         """
-        logger.info("Enrolling in course")
+        logger.info("Enrolling in course url {}".format(url))
         self.driver.get(url)
         logger.info("Setting up course")
         course_name = self.driver.title
@@ -343,6 +344,7 @@ class UdemyActionsUI:
             logger.info(f"Successfully enrolled in: '{course_name}'")
             self.stats.enrolled += 1
         cs_link, course_id = self._get_course_link_from_redirect(url)
+        logger.info(f"Course id: {course_id} and link: {cs_link}")
         return UdemyStatus.ALREADY_ENROLLED.value, cs_link, course_id
 
     def _find_all_lectures(self, first_link_to) -> List[str]:
@@ -568,6 +570,13 @@ class UdemyActionsUI:
         except NoSuchElementException:
             is_robot = False
         return is_robot
+    def _get_course_link_wrapper(self, course_link):
+        if (return_st:=self._get_course_link_from_redirect(course_link))[1]:
+            return return_st[0], return_st[1]
+        elif (return_st:=self._get_course_id(course_link))[1]:
+            return self.REQUEST_LECTURES.format(return_st[1]), return_st[1]
+        raise CourseNotFoundException(course_link)
+
 
     def _get_course_link_from_redirect(self, course_link) -> tuple:
         number_extr = self.extract_cs_id(course_link)
@@ -666,14 +675,22 @@ class UdemyActionsUI:
         new_session.headers.update({"Accept": "application/json"})
         new_session.headers.update({"authority": "ibm-learning.udemy.com"})
         # https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/1602900/user-attempted-quizzes/778172944/coding-exercise-answers/
-        for lect in list_of_lectures_ids:
-            print(self._build_json_complete_course(lect))
-            logger.info(f"Sending request to mark lecture {lect} as completed of course {course_id}")
-            response = new_session.post(url_pattern.format(course_id), json=self._build_json_complete_course(lect))
-            # logger.info(f"Headers in request {response.headers}\n\n"
-            #             f"Cookies in request {response.cookies}\n\n"
-            #             f"")
-            logger.info(f"{response.status_code} - {response.text}")
+        processes = []
+
+        start = time.time()
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            for lect in list_of_lectures_ids:
+                logger.info(f"Sending request to mark lecture {lect} as completed of course {course_id}")
+                processes.append(executor.submit(self._send_completition_req_helper, new_session, lect, course_id, url_pattern))
+        for task in as_completed(processes):
+            logger.info(task.result())
+        logger.info(f'Time taken to complete {len(list_of_lectures_ids)} lectures: {time.time() - start}')
+
+    def _send_completition_req_helper(self, new_session, lect, course_id, url_pattern):
+        # logger.info(self._build_json_complete_course(lect))
+        response = new_session.post(url_pattern.format(course_id), json=self._build_json_complete_course(lect))
+        return response.status_code, response.text
+
 
     @staticmethod
     def _build_json_complete_part_quiz(x: json):

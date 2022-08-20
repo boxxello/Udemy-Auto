@@ -16,6 +16,6 @@ class LoginException(Exception):
 
 class CourseNotFoundException(Exception):
     """
-       You have failed to find the course on Udemy site
+       You have failed to find the course id
     """
     pass

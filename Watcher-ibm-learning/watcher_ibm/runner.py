@@ -78,7 +78,7 @@ def _redeem_courses_ui(
             ):  # Cast to set to remove duplicate links
 
                 try:
-                    cs_link, course_id = udemy_actions._get_course_link_from_redirect(course_link)
+                    cs_link, course_id = udemy_actions._get_course_link_wrapper(course_link)
                     logger.debug(course_id)
                     if not course_id:
                         logger.info("Not in a rolled in course")
@@ -102,7 +102,7 @@ def _redeem_courses_ui(
                             print(f"course link {cs_link}")
                             list_of_lectures_id = udemy_actions._get_all_lectures_id(cs_link)
 
-                            print(f"Printing list of lectures of {cs_link}: {list_of_lectures_id}")
+                            logger.info(f"Printing list of lectures of {cs_link}: {list_of_lectures_id}")
                             print(udemy_actions._send_completition_req(cs_link, list_of_lectures_id, course_id))
 
                         else:
