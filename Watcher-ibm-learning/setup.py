@@ -41,7 +41,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "watcher_ibm=watcher_ibm.cli:main",
+            "watcher_udemy=watcher_udemy.cli:main",
         ],
     },
 )

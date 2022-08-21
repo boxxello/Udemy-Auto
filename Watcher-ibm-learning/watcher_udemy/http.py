@@ -3,7 +3,7 @@ import selenium
 from bs4 import BeautifulSoup
 from selenium.webdriver.chrome.webdriver import WebDriver
 
-from watcher_ibm.logging import get_logger
+from watcher_udemy.logging import get_logger
 
 logger = get_logger()
 #import driver manager instance from cli file

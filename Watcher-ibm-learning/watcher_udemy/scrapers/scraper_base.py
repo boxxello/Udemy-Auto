@@ -7,12 +7,12 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 
-from watcher_ibm.http import get
-from watcher_ibm.scrapers.base_scraper import BaseScraper
+from watcher_udemy.http import get
+from watcher_udemy.scrapers.base_scraper import BaseScraper
 from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 from selenium.webdriver.support import expected_conditions as EC
 
-logger = logging.getLogger("watcher_ibm")
+logger = logging.getLogger("watcher_udemy")
 
 
 class UdemyScraper(BaseScraper):
@@ -25,7 +25,7 @@ class UdemyScraper(BaseScraper):
     def __init__(self, enabled, driver, max_pages=None):
         super().__init__(driver)
 
-        self.scraper_name = "ibm-learning.udemy"
+        self.scraper_name = "udemy_watcher.solver"
         if not enabled:
             self.set_state_disabled()
         self.max_pages = max_pages
@@ -46,7 +46,7 @@ class UdemyScraper(BaseScraper):
 
     async def get_links(self) -> tuple[List[str], List[str]]:
         """
-        Scrape udemy links from ibm-learning.udemy.com
+        Scrape udemy links from domain
 
         :return: List of udemy course urls
         """
@@ -102,9 +102,9 @@ class UdemyScraper(BaseScraper):
 
     async def gather_course_links_from_top(self, courses: List[str]) -> tuple:
         """
-        Async fetching of the udemy course links from ibm-learning.udemy.com
+        Async fetching of the udemy course links from domain
 
-        :param list courses: A list of ibm-learning.udemy.com course links we want to fetch the udemy links for
+        :param list courses: A list of udemy business course links we want to fetch the udemy links for
         :return: list of udemy links
         """
         list_of_grp = []
@@ -134,9 +134,9 @@ class UdemyScraper(BaseScraper):
 
     async def gather_udemy_course_links(self, courses: List[str]):
         """
-        Async fetching of the udemy course links from ibm-learning.udemy.com
+        Async fetching of the udemy course links from domain
 
-        :param list courses: A list of ibm-learning.udemy.com course links we want to fetch the udemy links for
+        :param list courses: A list of udemy business course links  we want to fetch the udemy links for
         :return: list of udemy links
         """
         return [

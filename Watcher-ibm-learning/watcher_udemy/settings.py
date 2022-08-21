@@ -5,8 +5,8 @@ from typing import Dict, List, Tuple
 
 from ruamel.yaml import YAML, dump
 
-from watcher_ibm.logging import get_logger
-from watcher_ibm.utils import get_app_dir
+from watcher_udemy.logging import get_logger
+from watcher_udemy.utils import get_app_dir
 
 logger = get_logger()
 
@@ -17,18 +17,19 @@ class Settings:
     """
 
     def __init__(
-        self, delete_settings=False, delete_cookie=False, settings_path="settings.yaml"
+            self, delete_settings=False, delete_cookie=False, settings_path="settings.yaml"
     ):
         self.email = None
         self.password = None
         self.zip_code = None
         self.languages = []
         self.categories = []
-        self.domain="ibm-learning"
+        self.domain = None
         self._settings_path = os.path.join(get_app_dir(), settings_path)
         self._cookies_path = os.path.join(get_app_dir(), ".cookie")
         self._should_store_email = False
         self._should_store_password = False
+        self.should_store_domain=False
         if delete_settings:
             self.delete_settings()
         if delete_cookie:
@@ -73,6 +74,7 @@ class Settings:
             udemy_settings = settings["udemy"]
             self.email = udemy_settings["email"]
             self.password = udemy_settings["password"]
+            self.domain = udemy_settings["domain"]
             self.zip_code = udemy_settings.get("zipcode")
             self.languages = udemy_settings.get("languages")
             self.categories = udemy_settings.get("categories")
@@ -87,6 +89,7 @@ class Settings:
         """
         self.email, self._should_store_email = self._get_email()
         self.password, self._should_store_password = self._get_password()
+        self.domain, self.should_store_domain = self._get_domain()
         self.zip_code = self._get_zip_code()
         self.languages = self._get_languages()
         self.categories = self._get_categories()
@@ -175,6 +178,7 @@ class Settings:
             "udemy": {
                 "email": str(self.email) if self._should_store_email else None,
                 "password": str(self.password) if self._should_store_password else None,
+                "domain": str(self.domain) if self.should_store_domain else None,
                 "zipcode": str(self.zip_code),
                 "languages": self.languages,
                 "categories": self.categories,
@@ -238,3 +242,21 @@ class Settings:
         :return: None
         """
         self.password, _ = self._get_password(prompt_save=False)
+
+    def prompt_domain(self):
+        """
+        Prompt for Udemy domain only. Does not prompt for saving
+        """
+        self.domain, _ = self._get_domain(prompt_save=False)
+
+    def _get_domain(self, prompt_save=True):
+        """
+            Get input from user on the business sub-domain to use for udemy
+        """
+        domain = input("Please enter your domain: ")
+        if prompt_save:
+            save_domain = input("Do you want to save your domain for future use (Y/N): ")
+            should_store = save_domain.lower() == "y"
+        else:
+            should_store = False
+        return domain, should_store

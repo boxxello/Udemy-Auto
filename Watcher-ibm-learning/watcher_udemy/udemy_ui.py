@@ -19,10 +19,10 @@ from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from watcher_ibm.exceptions import LoginException, RobotException, CourseNotFoundException
-from watcher_ibm.logging import get_logger
-from watcher_ibm.settings import Settings
-from watcher_ibm.utils import get_app_dir, validateJSON
+from watcher_udemy.exceptions import LoginException, RobotException, CourseNotFoundException
+from watcher_udemy.logging import get_logger
+from watcher_udemy.settings import Settings
+from watcher_udemy.utils import get_app_dir, validateJSON
 
 logger = get_logger()
 
@@ -84,8 +84,7 @@ class UdemyActionsUI:
     Contains any logic related to interacting with udemy website
     """
 
-    DOMAIN = "https://ibm-learning.udemy.com"
-    DOMAIN_BUSINESS="ibm-learning"
+    DOMAIN = ""
     REQUEST_URL_NUM_LECTURES = f"{DOMAIN}/api-2.0/courses/{{}}/?fields[course]=title,num_lectures,completion_ratio"
     REQUEST_URL_NUM_QUIZZES = f"{DOMAIN}/api-2.0/courses/{{}}/?fields[course]=num_quizzes"
     REQUEST_URL_URL = f"{DOMAIN}/api-2.0/courses/{{}}/?fields[course]=url"
@@ -106,7 +105,8 @@ class UdemyActionsUI:
     COURSE_DETAILS = (
         f"{DOMAIN}/api-2.0/courses/{{}}/?fields[course]=title,url,context_info,primary_category,primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,num_subscribers,num_quizzes,num_lectures,completion_ratio"
     )
-    ENROLLED_COURSES_URL = (f"{DOMAIN}/api-2.0/users/me/subscribed-courses/?&progress_filter=in-progress&page_size=1400")
+    ENROLLED_COURSES_URL = (
+        f"{DOMAIN}/api-2.0/users/me/subscribed-courses/?&progress_filter=in-progress&page_size=1400")
 
     QUIZ_URL = f"{DOMAIN}/api-2.0/courses/{{}}/subscriber-curriculum-items/?page_size=1400&fields[lecture]=title,object_index,is_published,sort_order,created,asset,supplementary_assets,is_free&fields[quiz]=title,object_index,is_published,sort_order,type&fields[practice]=title,object_index,is_published,sort_order&fields[chapter]=title,object_index,is_published,sort_order&fields[asset]=title,filename,asset_type,status,time_estimation,is_external&caching_intent=Truefields[course]=title,url,context_info,primary_category,primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,num_subscribers,num_quizzes,num_lectures,completion_ratio"
     RESPONSES_URL = f"{DOMAIN}/api-2.0/quizzes/{{}}/assessments/?version=1&page_size=1400&fields[assessment]=id,assessment_type,prompt,correct_response,section,question_plain,related_lectures"
@@ -125,6 +125,7 @@ class UdemyActionsUI:
 
         self.driver = driver
         self.settings = settings
+        self.DOMAIN = settings.domain
         self.logged_in = False
         self.stats = RunStatistics()
         self.session = requests.Session()
@@ -144,7 +145,7 @@ class UdemyActionsUI:
             cookie_details = self._load_cookies()
 
             if cookie_details is None:
-                self.driver.get(f"{self.DOMAIN}")
+                self.driver.get(f"https://{self.DOMAIN}.udemy.com/")
 
                 # Prompt for email/password if we don't have them saved in settings
                 if self.settings.email is None:
@@ -396,7 +397,7 @@ class UdemyActionsUI:
                     return json_attr.get("courseId")
 
     @staticmethod
-    def extract_cs_id(url: str, domain:str) -> int:
+    def extract_cs_id(url: str, domain: str) -> int:
         pattern = fr"^https:\/\/(www\.)?{domain}\.udemy\.com\/course-dashboard-redirect\/\?course_id=(?P<extract_num>\d+)$"
         matches = regex.search(pattern, url, regex.M)
         if not matches:
@@ -575,8 +576,8 @@ class UdemyActionsUI:
             is_robot = False
         return is_robot
 
-    def _get_course_link_wrapper(self, course_link,domain):
-        if (return_st := self._get_course_link_from_redirect(course_link,domain))[1]:
+    def _get_course_link_wrapper(self, course_link, domain):
+        if (return_st := self._get_course_link_from_redirect(course_link, domain))[1]:
 
             return return_st[0], return_st[1]
         elif (return_st := self._get_course_id(course_link)):
@@ -584,12 +585,12 @@ class UdemyActionsUI:
 
         raise CourseNotFoundException(course_link)
 
-    def _get_course_link_from_redirect(self, course_link,domain) -> tuple:
+    def _get_course_link_from_redirect(self, course_link, domain) -> tuple:
         number_extr = self.extract_cs_id(course_link, domain)
         return self.REQUEST_LECTURES.format(number_extr), number_extr
 
-    def _get_completition_course_link(self, course_link,domain):
-        number_extr = self.extract_cs_id(course_link,domain)
+    def _get_completition_course_link(self, course_link, domain):
+        number_extr = self.extract_cs_id(course_link, domain)
         return self.REQUEST_URL_NUM_LECTURES.format(number_extr)
 
     def _get_completetion_ratio(self, course_link):
@@ -788,7 +789,8 @@ class UdemyActionsUI:
                                                 lst_of_logs.append(y['params']['request']['url'])
                     # check with validate_assessment_url function if the url in list lst_of_logs
                     non_duplicate_lst = list(set(lst_of_logs))
-                    lst_of_assessments_ids = [x for x in non_duplicate_lst if self.validate_assessment_url(x, self.settings.domain)]
+                    lst_of_assessments_ids = [x for x in non_duplicate_lst if
+                                              self.validate_assessment_url(x, self.settings.domain)]
 
                     if len(lst_of_assessments_ids) > 1:
                         logger.error("Something went wrong, it was supposed to be a lst of ids of length=1")
@@ -821,7 +823,7 @@ class UdemyActionsUI:
     #
     #     return filtered
     @staticmethod
-    def validate_assessment_url(url,domain) -> Optional[str]:
+    def validate_assessment_url(url, domain) -> Optional[str]:
         """
         Validates the url passed in, if it is a valid url for the udemy course then returns the url
         :param str url: url to validate
@@ -1034,7 +1036,8 @@ class UdemyActionsUI:
                                                 lst_of_logs.append(y['params']['request']['url'])
                     # check with validate_assessment_url function if the url in list lst_of_logs
                     non_duplicate_lst = list(set(lst_of_logs))
-                    lst_of_assessments_ids = [x for x in non_duplicate_lst if self.validate_assessment_url(x, self.settings.domain)]
+                    lst_of_assessments_ids = [x for x in non_duplicate_lst if
+                                              self.validate_assessment_url(x, self.settings.domain)]
 
                     if len(lst_of_assessments_ids) > 1:
                         logger.error("Something went wrong, it was supposed to be a lst of ids of length=1")

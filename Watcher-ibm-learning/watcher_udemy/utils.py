@@ -11,7 +11,7 @@ def get_app_dir() -> str:
     :return:
     """
 
-    app_dir = os.path.join(os.path.expanduser("~"), ".watcher_ibm")
+    app_dir = os.path.join(os.path.expanduser("~"), ".watcher_udemy")
     print(app_dir)
     if not os.path.isdir(app_dir):
         # If the app data dir does not exist create it

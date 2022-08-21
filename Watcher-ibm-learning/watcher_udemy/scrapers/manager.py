@@ -2,7 +2,7 @@ import asyncio
 from functools import reduce
 from typing import List
 
-from watcher_ibm.scrapers.scraper_base import UdemyScraper
+from watcher_udemy.scrapers.scraper_base import UdemyScraper
 
 
 
@@ -19,7 +19,6 @@ class ScraperManager:
         )
         self._scrapers = (
             self.udemy_scraper,
-
         )
 
     async def run(self) -> List:

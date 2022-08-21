@@ -2,7 +2,7 @@ import logging
 import logging.config
 import os
 
-from watcher_ibm.utils import get_app_dir
+from watcher_udemy.utils import get_app_dir
 
 
 class CustomFileHandler(logging.FileHandler):
@@ -22,12 +22,12 @@ def load_logging_config() -> None:
     :return: None
     """
 
-    my_logger = logging.getLogger("watcher_ibm")
+    my_logger = logging.getLogger("watcher_udemy")
     my_logger.setLevel(logging.INFO)
 
     # File handler
     file_handler = CustomFileHandler()
-    log_format = "%(asctime)s::%(name)s::%(levelname)s ::%(module)s: %(message)s"
+    log_format = "%(asctime)s::%(name)s::%(levelname)s::%(module)s: %(message)s"
     formatter = logging.Formatter(fmt=log_format)
     file_handler.setFormatter(formatter)
     my_logger.addHandler(file_handler)
@@ -44,4 +44,4 @@ def get_logger() -> logging.Logger:
 
     :return: An instance of the app logger
     """
-    return logging.getLogger("watcher_ibm")
+    return logging.getLogger("watcher_udemy")

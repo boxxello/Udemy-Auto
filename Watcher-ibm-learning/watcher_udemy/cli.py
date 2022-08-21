@@ -3,9 +3,9 @@ import logging
 from argparse import Namespace
 from typing import Tuple, Union
 
-from watcher_ibm import ALL_VALID_BROWSER_STRINGS, DriverManager, Settings
-from watcher_ibm.logging import get_logger
-from watcher_ibm.runner import redeem_courses_ui
+from watcher_udemy import ALL_VALID_BROWSER_STRINGS, DriverManager, Settings
+from watcher_udemy.logging import get_logger
+from watcher_udemy.runner import redeem_courses_ui
 
 logger = get_logger()
 
@@ -45,11 +45,9 @@ def run(
     :return:
     """
     settings = Settings(delete_settings, delete_cookie)
-    print("ci arrivo")
-
     if browser:
         dm = DriverManager(browser=browser)
-        print("ci arrivo browser")
+        logger.debug("ci arrivo browser")
         redeem_courses_ui(
             dm.driver,
             settings,
@@ -137,7 +135,7 @@ def parse_args() -> Namespace:
     )
 
     args = parser.parse_args()
-    print(args)
+    logger.debug(args)
     return args
 
 

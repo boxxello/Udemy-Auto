@@ -9,16 +9,16 @@ from selenium.common.exceptions import (
     WebDriverException,
 )
 
-from watcher_ibm import (
+from watcher_udemy import (
     ScraperManager,
     Settings,
     UdemyActionsUI,
     UdemyStatus,
     exceptions,
 )
-from watcher_ibm.exceptions import CourseNotFoundException
-from watcher_ibm.logging import get_logger
-from watcher_ibm.utils import read_urls_from_file
+from watcher_udemy.exceptions import CourseNotFoundException
+from watcher_udemy.logging import get_logger
+from watcher_udemy.utils import read_urls_from_file
 
 logger = get_logger()
 
@@ -33,7 +33,6 @@ def _redeem_courses_ui(
         scrapers: ScraperManager,
         scrape_urls_from_file: bool,
         filename: str,
-        domain:str
 ) -> None:
     """
     Method to scrape courses from the supported sites and enroll in them on udemy.
@@ -91,7 +90,7 @@ def _redeem_courses_ui(
 
                 try:
                     try:
-                        cs_link, course_id = udemy_actions._get_course_link_wrapper(course_link, domain)
+                        cs_link, course_id = udemy_actions._get_course_link_wrapper(course_link, settings.domain)
                         logger.info("In the courses already rolled ")
                         status = UdemyStatus.ALREADY_ENROLLED.value
                     except CourseNotFoundException:
@@ -176,9 +175,9 @@ def redeem_courses_ui(
             max_pages,
             driver
         )
-        _redeem_courses_ui(driver, settings, scrapers, scrape_urls_from_file, filename, domain=settings.domain)
+        _redeem_courses_ui(driver, settings, scrapers, scrape_urls_from_file, filename)
     except Exception as e:
-        logger.error(f"Exception in redeem courses: {e}")
+        logger.error(f"Exception in redeem courses: {e}", exc_info=True)
     finally:
         logger.info("Closing browser")
         driver.quit()

@@ -1,4 +1,4 @@
-from watcher_ibm.cli import main
+from watcher_udemy.cli import main
 
 if __name__ == "__main__":
     main()
