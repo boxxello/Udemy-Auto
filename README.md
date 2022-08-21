@@ -38,8 +38,8 @@ Also, don't forget to **Fork & Star the repository if you like it!**
 
 Download a release of this project or clone the repository then navigate to the
 folder where you placed the files on. <br>
-Type `pip install -r requirements.txt` to
-get all the requirements installed in one go. Similar instructions applies for poetry.
+Type `pip install -r requirements.txt` to get all the requirements installed in one go. <br>
+Similar instructions applies for poetry.
 
 ---
 
