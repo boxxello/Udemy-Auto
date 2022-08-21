@@ -6,7 +6,7 @@ attrs==22.1.0
 beautifulsoup4==4.11.1
 Brotli==1.0.9
 cchardet==2.1.7
-certifi @ file:///C:/Windows/TEMP/abs_e9b7158a-aa56-4a5b-87b6-c00d295b01fanefpc8_o/croots/recipe/certifi_1655968940823/work/certifi
+certifi
 cffi==1.15.1
 charset-normalizer==2.0.12
 cloudscraper==1.2.60
@@ -19,7 +19,7 @@ pycares==4.2.1
 pycparser==2.21
 pyparsing==3.0.9
 python-dotenv==0.20.0
-regex @ file:///C:/ci/regex_1658258299320/work
+regex
 requests==2.27.1
 requests-toolbelt==0.9.1
 ruamel.yaml==0.16.13
