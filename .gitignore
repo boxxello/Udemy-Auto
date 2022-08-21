@@ -237,7 +237,8 @@ test_tmp/
 
 .idea/poetry.xml
 
-
+#ignore file.txt
+file.txt
 
 
 # ignore pypi config
