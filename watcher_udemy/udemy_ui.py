@@ -130,7 +130,6 @@ class UdemyActionsUI:
         self.URL_SEND_RESPONSE_MULTIPLE = (
             f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{course_id}}/quizzes/{{quiz_id}}/user-attempted-quizzes/{{quiz_id}}/assessment-answers/")
         #	/api-2.0/users/me/subscribed-courses/359550/quizzes/95420/user-attempted-quizzes/latest/
-        # https://ibm-learning.udemy.com/course/mastering-object-oriented-design-in-java/learn/quiz/95416#overview
         self.LAST_ID_QUIZ = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{course_id}}/quizzes/{{quiz_id}}/user-attempted-quizzes/latest"
         self.URL_COURSE_NO_API = f"https://{self.DOMAIN}.udemy.com/course/{{course_id}}/"
         self.URL_QUIZ_NOAPI = f"https://{self.DOMAIN}.udemy.com/course/{{url_no_id}}/learn/quiz/{{assessment_id}}#overview"
@@ -261,7 +260,7 @@ class UdemyActionsUI:
 
             try:
                 ibm_learning_subm = WebDriverWait(self.driver, 30).until(
-                    EC.presence_of_element_located((By.ID, "ibm-learning"))
+                    EC.presence_of_element_located((By.ID, self.DOMAIN))
                 )
                 logger.info("Logged in to udemy, trying to retrieve button")
                 self.logged_in = True
@@ -680,8 +679,6 @@ class UdemyActionsUI:
         course_details = self._get_course_details(course_id)
         course_url = course_details['url']
         logger.info(f"\n\nLogging course details {course_details}\n\n{course_url}")
-
-        # https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/1602900/user-attempted-quizzes/778172944/coding-exercise-answers/
         processes = []
 
         start = time.time()
