@@ -11,11 +11,12 @@ class ScraperManager:
             self,
             udemy_scraper_enabled: bool,
             max_pages,
-            driver
+            driver,
+            settings
     ):
 
         self.udemy_scraper = UdemyScraper(
-            udemy_scraper_enabled,driver, max_pages=max_pages
+            udemy_scraper_enabled,driver,settings,max_pages=max_pages
         )
         self._scrapers = (
             self.udemy_scraper,

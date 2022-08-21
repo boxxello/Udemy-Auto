@@ -15,7 +15,8 @@ class ScraperStates(Enum):
 
 
 class BaseScraper(ABC):
-    def __init__(self, driver):
+    def __init__(self, driver, settings):
+        self.settings=settings
         self.driver = driver
         self._state = None
         self.scraper_name = None
@@ -28,7 +29,7 @@ class BaseScraper(ABC):
         return
 
     @abstractmethod
-    async def get_links(self):
+    async def get_links(self, *args, **kwargs):
         return
 
     @property

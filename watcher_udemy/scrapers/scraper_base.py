@@ -20,11 +20,10 @@ class UdemyScraper(BaseScraper):
     Contains any logic related to scraping of data from ibm-learning.udemy.com
     """
 
-    DOMAIN = "https://ibm-learning.udemy.com"
-    DOMAIN_BUSINESS="ibm-learning"
-    def __init__(self, enabled, driver, max_pages=None):
-        super().__init__(driver)
 
+    def __init__(self, enabled, driver,settings, max_pages=None):
+        super().__init__(driver,settings)
+        self.DOMAIN_BUSINESS_FULL=f"https://{self.settings.domain}.udemy.com"
         self.scraper_name = "udemy_watcher.solver"
         if not enabled:
             self.set_state_disabled()
@@ -37,14 +36,14 @@ class UdemyScraper(BaseScraper):
 
         :return: List of udemy course links
         """
-        links = await self.get_links()
+        links = await self.get_links(self.DOMAIN_BUSINESS_FULL)
         logger.info(
-            f"Page: {self.current_page} of {self.last_page} scraped from ibm-learning.udemy.com"
+            f"Page: {self.current_page} of {self.last_page} scraped from business domain {self.settings.domain}"
         )
         self.max_pages_reached()
         return links[1]
 
-    async def get_links(self) -> tuple[List[str], List[str]]:
+    async def get_links(self, domain) -> tuple[List[str], List[str]]:
         """
         Scrape udemy links from domain
 
@@ -53,7 +52,7 @@ class UdemyScraper(BaseScraper):
 
         self.current_page += 1
         # /home/my-courses/learning/?p=1
-        coupons_data = await get(f"{self.DOMAIN}/home/my-courses/learning/?p={self.current_page}", driver=self.driver)
+        coupons_data = await get(f"https://{domain}.udemy.com/home/my-courses/learning/?p={self.current_page}", driver=self.driver)
         soup = BeautifulSoup(coupons_data, "html.parser")
         # print(coupons_data)
         try:
@@ -95,7 +94,7 @@ class UdemyScraper(BaseScraper):
         # url_end = course_card["href"].split("/")[-1]
         for course_card in soup.find_all("a"):
             if course_card.get("href") is not None:
-                complete_url = f"{self.DOMAIN}{course_card['href']}"
+                complete_url = f"{self.DOMAIN_BUSINESS_FULL}{course_card['href']}"
                 udemy_links.append(complete_url)
 
         return udemy_links
@@ -109,7 +108,7 @@ class UdemyScraper(BaseScraper):
         """
         list_of_grp = []
         list_of_crs = []
-        for tuple in await asyncio.gather(*map(self.validate_courses_url, courses, self.DOMAIN_BUSINESS)):
+        for tuple in await asyncio.gather(*map(self.validate_courses_url, courses, self.settings.domain)):
             if tuple[1] is not None :
                 if tuple[0] == 0:
                     list_of_grp.append(tuple[1])
@@ -128,7 +127,7 @@ class UdemyScraper(BaseScraper):
         data = await get(url, driver=self.driver)
         soup = BeautifulSoup(data, "html.parser")
         for link in soup.find_all("a", href=True):
-            udemy_link = super().validate_course_url(link["href"], self.DOMAIN_BUSINESS)
+            udemy_link = super().validate_course_url(link["href"], self.settings.domain)
             if udemy_link is not None:
                 return udemy_link
 

@@ -20,9 +20,6 @@ from watcher_udemy.utils import read_urls_from_file
 logger = get_logger()
 
 
-
-
-
 def _redeem_courses_ui(
 
         driver,
@@ -45,7 +42,6 @@ def _redeem_courses_ui(
     udemy_actions.login()
 
     loop = asyncio.get_event_loop()
-
 
     logger.info("launching the scrapers")
 
@@ -72,8 +68,8 @@ def _redeem_courses_ui(
         return
     else:
 
-        udemy_course_progress_id=udemy_actions._get_already_rolled_courses()
-        udemy_course_links=[]
+        udemy_course_progress_id = udemy_actions._get_already_rolled_courses()
+        udemy_course_links = []
         for x in udemy_course_progress_id:
             udemy_course_links.append(udemy_actions.URL_TO_COURSE_ID.format(x))
         # udemy_course_links = loop.run_until_complete(scrapers.run())
@@ -105,13 +101,14 @@ def _redeem_courses_ui(
                                 logger.info("It has got NO quizzes in it")
                             else:
                                 logger.info("It has got quizzes in it")
-                                #udemy_actions._solve_quiz(course_id)
+                                # udemy_actions._solve_quiz(course_id)
                                 udemy_actions._solve_single_quiz_test(course_id)
                             print(f"course link {cs_link}")
                             list_of_lectures_id = udemy_actions._get_all_lectures_id(cs_link)
 
                             logger.info(f"Printing list of lectures of {cs_link}: {list_of_lectures_id}")
-                            print(udemy_actions._send_completition_req(cs_link, list_of_lectures_id, course_id, settings.domain))
+                            print(udemy_actions._send_completition_req(cs_link, list_of_lectures_id, course_id,
+                                                                       settings.domain))
                             course_details = udemy_actions._get_course_details(course_id)
                             course_details_complt = course_details['completion_ratio']
                             if course_details_complt != 100:
@@ -119,7 +116,6 @@ def _redeem_courses_ui(
 
                         else:
                             logger.info("Course was already finished")
-
 
                     udemy_course_links.remove(course_link)
 
@@ -138,7 +134,7 @@ def _redeem_courses_ui(
                     logger.error(e)
                     return
                 except Exception as e:
-                    logger.error(f"Unexpected exception: {e}")
+                    logger.error(f"Unexpected exception: {e}", exc_info=True)
         else:
             udemy_actions.stats.table()
             if len(list_of_error_links) > 0:
@@ -168,9 +164,7 @@ def redeem_courses_ui(
     try:
         scrapers = ScraperManager(
             udemy_scraper_enabled,
-
-            max_pages,
-            driver
+            max_pages, driver, settings
         )
         _redeem_courses_ui(driver, settings, scrapers, scrape_urls_from_file, filename)
     except Exception as e:

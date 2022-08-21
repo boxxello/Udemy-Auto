@@ -116,7 +116,7 @@ class UdemyActionsUI:
             "authority": f"{self.DOMAIN}.udemy.com"
         }
         self.COURSE_DETAILS = (
-            f"{self.DOMAIN}/api-2.0/courses/{{}}/?fields[course]=title,url,context_info,primary_category,primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,num_subscribers,num_quizzes,num_lectures,completion_ratio"
+            f"https://{self.DOMAIN}.udemy.com/api-2.0/courses/{{}}/?fields[course]=title,url,context_info,primary_category,primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,num_subscribers,num_quizzes,num_lectures,completion_ratio"
         )
         self.ENROLLED_COURSES_URL = (
             f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/?&progress_filter=in-progress&page_size=1400")
