@@ -5,13 +5,12 @@
 * ANY DEVELOPER WILLING TO CONTRIBUTE FEEL FREE TO FORK IT/OPEN PULL REQUESTS
 
 ARE YOU BORED ABOUT SPENDING TIME TO GET BADGES ON UDEMY TO CERTIFY YOUR KNOWLEDGE?
-Don't worry, with the power of
-web-scraping and automation, this script will watch it for you and also solve boring quizzes!
-<b>only multiple choices quizzes are addressed in the current version</b>
+Don't worry, with the power of web-scraping and automation, this script will watch it for you and also solve boring quizzes!<br>
+<b>Only multiple choices quizzes are addressed in the current version</b>
 
 
 
-In case of any bugs or issues, please open an issue in github.
+In case of any bugs or issues, please open an issue.
 
 Also, don't forget to **Fork & Star the repository if you like it!**
 
@@ -76,6 +75,6 @@ get all the requirements installed in one go. Similar instructions applies for p
 Well, short answer is NO.<br>
 Could I do with by making some minor changes to the code?  Yes.<br>
 
-** Support & Maintenance Notice
+## Support & Maintenance Notice
 
 By using this repo/script, you agree that the authors and contributors are under no obligation to provide support for the script and can discontinue it's development, as and when necessary, without prior notice.
