@@ -1,4 +1,4 @@
-# Udemy-Auto
+# Udemy-Auto - ALPHA STAGE
 [![forthebadge](https://forthebadge.com/images/badges/made-with-python.svg)](https://forthebadge.com)
 * ALPHA IS A PRE DEVELOPMENT BRANCH!
 
@@ -18,7 +18,8 @@ Also, don't forget to **Fork & Star the repository if you like it!**
 ** **_Disclaimer & WARNINGS:_**
 
 1. **Use** this ONLY for **Educational Purposes!** By using this code you agree
-   that **I'm not responsible for any kind of trouble** caused by the code. **THIS PROJECT IS NOT AFFILIATED WITH UDEMY.**
+   that **I'm not responsible for any kind of trouble** caused by the code. <br>
+   **THIS PROJECT IS NOT AFFILIATED WITH UDEMY.**
 2. **Make sure web-scraping is legal in your region.**
 3. This is **NOT a hacking script**!
 ---
@@ -37,8 +38,8 @@ Also, don't forget to **Fork & Star the repository if you like it!**
 
 Download a release of this project or clone the repository then navigate to the
 folder where you placed the files on. <br>
-Type `pip install -r requirements.txt` to
-get all the requirements installed in one go. Similar instructions applies for poetry.
+Type `pip install -r requirements.txt` to get all the requirements installed in one go. <br>
+Similar instructions applies for poetry.
 
 ---
 
@@ -77,4 +78,4 @@ Could I do with by making some minor changes to the code?  Yes.<br>
 
 ## Support & Maintenance Notice
 
-By using this repo/script, you agree that the authors and contributors are under no obligation to provide support for the script and can discontinue it's development, as and when necessary, without prior notice.
+By using this repo/script, you agree that the authors and contributors are under no obligation to provide support for the script and can discontinue its development, as and when necessary, without prior notice.
