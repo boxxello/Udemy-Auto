@@ -67,7 +67,7 @@ get all the requirements installed in one go. Similar instructions applies for p
 5 . Run the script in terminal with your target arguments:
 
 - `udemy_watcher`
-- `udemy_watcher --browser=chrome --scrape_from_file=True --file=file.txt`
+- `udemy_watcher --browser=chrome --scrape_from_file --file=file.txt`
 
 ## FAQs
 
