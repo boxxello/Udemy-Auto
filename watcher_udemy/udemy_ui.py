@@ -259,7 +259,7 @@ class UdemyActionsUI:
                 self.driver.get(f"https://{self.DOMAIN}.udemy.com")
 
             try:
-                ibm_learning_subm = WebDriverWait(self.driver, 30).until(
+                WebDriverWait(self.driver, 30).until(
                     EC.presence_of_element_located((By.ID, self.DOMAIN))
                 )
                 logger.info("Logged in to udemy, trying to retrieve button")
