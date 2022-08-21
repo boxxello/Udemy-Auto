@@ -48,9 +48,9 @@ get all the requirements installed in one go. Similar instructions applies for p
 2 . Run the script and the cli will guide you through the settings required
 3 . If you decide to save the settings they will be stored in your home directory: <br>
     **Windows**:
-    `C:/Users/CurrentUserName/.udemy_enroller` <br>
+    `C:/Users/CurrentUserName/.watcher_udemy` <br>
     **Linux**:
-    `/home/CurrentUserName/.udemy_enroller` <br>
+    `/home/CurrentUserName/.watcher_udemy` <br>
     **The values in settings.yaml should be in the same language as the site you are browsing on**
 
 4 . The script can be passed arguments:
@@ -67,8 +67,8 @@ get all the requirements installed in one go. Similar instructions applies for p
 
 5 . Run the script in terminal with your target arguments:
 
-- `udemy_enroller`
-- `udemy_enroller --browser=chrome`
+- `udemy_watcher`
+- `udemy_watcher --browser=chrome --scrape_from_file=True --file=file.txt`
 
 ## FAQs
 
