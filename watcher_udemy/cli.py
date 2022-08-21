@@ -7,7 +7,7 @@ from typing import Tuple, Union
 
 from watcher_udemy import ALL_VALID_BROWSER_STRINGS, DriverManager, Settings
 from watcher_udemy.logging import get_logger
-from watcher_udemy.runner import redeem_courses_ui
+from watcher_udemy.runner import watch_courses_ui
 
 logger = get_logger()
 
@@ -53,7 +53,7 @@ def run(
         if udemy_scraper_enabled:
             if scrape_urls_from_file:
                 if os.path.exists(filename) and filename.endswith('.txt'):
-                    redeem_courses_ui(
+                    watch_courses_ui(
                         dm.driver,
                         settings,
                         udemy_scraper_enabled,
@@ -66,7 +66,7 @@ def run(
                                  " doesn't actually exist.")
                     exit(-4)
             else:
-                redeem_courses_ui(
+                watch_courses_ui(
                     dm.driver,
                     settings,
                     udemy_scraper_enabled,

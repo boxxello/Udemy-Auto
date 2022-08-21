@@ -20,7 +20,7 @@ from watcher_udemy.utils import read_urls_from_file
 logger = get_logger()
 
 
-def _redeem_courses_ui(
+def _watch_courses_ui(
 
         driver,
         settings: Settings,
@@ -143,7 +143,7 @@ def _redeem_courses_ui(
             return
 
 
-def redeem_courses_ui(
+def watch_courses_ui(
         driver,
         settings: Settings,
         udemy_scraper_enabled: bool,
@@ -166,7 +166,7 @@ def redeem_courses_ui(
             udemy_scraper_enabled,
             max_pages, driver, settings
         )
-        _redeem_courses_ui(driver, settings, scrapers, scrape_urls_from_file, filename)
+        _watch_courses_ui(driver, settings, scrapers, scrape_urls_from_file, filename)
     except Exception as e:
         logger.error(f"Exception in redeem courses: {e}", exc_info=True)
     finally:
