@@ -80,19 +80,6 @@ def parse_args() -> Namespace:
         default=True,
         help="Run base udemy scraper",
     )
-    parser.add_argument(
-        "--tutorialbar",
-        action="store_true",
-        default=False,
-        help="Run tutorialbar scraper",
-    )
-
-    parser.add_argument(
-        "--discudemy",
-        action="store_true",
-        default=False,
-        help="Run discudemy scraper",
-    )
 
     parser.add_argument(
         "--max-pages",
