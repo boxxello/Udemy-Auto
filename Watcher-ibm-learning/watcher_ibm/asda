@@ -12,3 +12,22 @@ xhr.onreadystatechange = function () {
 let data = `{"lecture_id":15495718,"downloaded":false}`;
 
 xhr.send(data);
+https://ibm-learning.udemy.com/course/learn-openshift/
+
+https://ibm-learning.udemy.com/course/aws-certified-solutions-architect-associate-hands-on/
+https://ibm-learning.udemy.com/course/comptiacsaplus/
+https://ibm-learning.udemy.com/course/itil-4-foundation-practice-certification-exams-6-exams-q/
+https://ibm-learning.udemy.com/course/comptia-220-1001-exam/
+https://ibm-learning.udemy.com/course/windows-server-2016/
+https://ibm-learning.udemy.com/course/aws-data-analytics/
+https://ibm-learning.udemy.com/course/crash-course-electronics-and-pcb-design/
+https://ibm-learning.udemy.com/course/aws-solutions-architect-professional/
+https://ibm-learning.udemy.com/course/computer-forensics-fundamentals/
+https://ibm-learning.udemy.com/course/linux-shell-scripting-projects/
+https://ibm-learning.udemy.com/course/risk-management-for-cybersecurity/
+https://ibm-learning.udemy.com/course/google-cloud-certification-associate-cloud-engineer/
+https://ibm-learning.udemy.com/course/learn-openshift/
+https://ibm-learning.udemy.com/course/az-102-azure-administrator-certification-transition/
+https://ibm-learning.udemy.com/course/introduction-to-computer-networks/
+https://ibm-learning.udemy.com/course/azure-fundamentals-az-900-certification/
+https://ibm-learning.udemy.com/course/aws-certified-solutions-architect-associate-practice-tests-k/

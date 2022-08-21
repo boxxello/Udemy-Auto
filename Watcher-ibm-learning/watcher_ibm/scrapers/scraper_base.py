@@ -21,7 +21,7 @@ class UdemyScraper(BaseScraper):
     """
 
     DOMAIN = "https://ibm-learning.udemy.com"
-
+    DOMAIN_BUSINESS="ibm-learning"
     def __init__(self, enabled, driver, max_pages=None):
         super().__init__(driver)
 
@@ -109,7 +109,7 @@ class UdemyScraper(BaseScraper):
         """
         list_of_grp = []
         list_of_crs = []
-        for tuple in await asyncio.gather(*map(self.validate_courses_url, courses)):
+        for tuple in await asyncio.gather(*map(self.validate_courses_url, courses, self.DOMAIN_BUSINESS)):
             if tuple[1] is not None :
                 if tuple[0] == 0:
                     list_of_grp.append(tuple[1])
@@ -128,7 +128,7 @@ class UdemyScraper(BaseScraper):
         data = await get(url, driver=self.driver)
         soup = BeautifulSoup(data, "html.parser")
         for link in soup.find_all("a", href=True):
-            udemy_link = super().validate_course_url(link["href"])
+            udemy_link = super().validate_course_url(link["href"], self.DOMAIN_BUSINESS)
             if udemy_link is not None:
                 return udemy_link
 

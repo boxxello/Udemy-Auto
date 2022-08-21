@@ -24,7 +24,7 @@ class Settings:
         self.zip_code = None
         self.languages = []
         self.categories = []
-
+        self.domain="ibm-learning"
         self._settings_path = os.path.join(get_app_dir(), settings_path)
         self._cookies_path = os.path.join(get_app_dir(), ".cookie")
         self._should_store_email = False

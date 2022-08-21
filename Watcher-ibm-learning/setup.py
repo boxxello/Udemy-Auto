@@ -7,17 +7,17 @@ here = pathlib.Path(__file__).parent.resolve()
 
 
 setup(
-    name="udemy-enroller",
+    name="watcher-auto-udemy",
     version="4.1.2",
     long_description_content_type="text/markdown",
-    author="aapatre",
-    author_email="udemyenroller@gmail.com",
+    author="boxxo",
+    author_email="watcher_auto_udemy@gmail.com",
     maintainer="fakeid cullzie",
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Education",
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
-        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.10",
     ],
     keywords="udemy, education, enroll",
     packages=find_packages(

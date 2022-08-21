@@ -107,13 +107,14 @@ class BaseScraper(ABC):
             self.set_state_complete()
 
         return should_run
+
     @staticmethod
-    async def  validate_courses_url(url)->tuple:
-        url_pattern_grp_crs = r"^https:\/\/(www\.)?ibm-learning\.udemy\.com\/courses\/.+\/..*$"
+    async def  validate_courses_url(url, domain)->tuple:
+        url_pattern_grp_crs = rf"^https:\/\/(www\.)?{domain}\.udemy\.com\/courses\/.+\/..*$"
         # https://regex101.com/r/1E6RsB/1
         # https://regex101.com/r/yl2S3g/1
 
-        url_pattern_course=r"https:\/\/(www\.)?ibm-learning\.udemy\.com\/course-dashboard-redirect\/\?course_id=\d+.*$"
+        url_pattern_course=rf"https:\/\/(www\.)?{domain}\.udemy\.com\/course-dashboard-redirect\/\?course_id=\d+.*$"
         #https://regex101.com/r/KHpL7F/1
         matching = re.match(url_pattern_grp_crs, url)
         if matching is not None:
@@ -129,7 +130,7 @@ class BaseScraper(ABC):
 
 
     @staticmethod
-    async def  validate_course_url(url) -> Optional[str]:
+    async def  validate_course_url(url, domain) -> Optional[str]:
         """
         Validate the udemy coupon url passed in
         If it matches the pattern it is returned else it returns None
@@ -137,7 +138,7 @@ class BaseScraper(ABC):
         :param url: The url to check the udemy coupon pattern for
         :return: The validated url or None
         """
-        url_pattern = r"https:\/\/(www\.)?ibm-learning\.udemy\.com\/course\/.*$"
+        url_pattern = fr"https:\/\/(www\.)?{domain}\.udemy\.com\/course\/.*$"
         #https://regex101.com/r/7bdkol/1
         matching = re.match(url_pattern, url)
         if matching is not None:

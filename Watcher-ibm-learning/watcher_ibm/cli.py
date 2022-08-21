@@ -38,8 +38,7 @@ def run(
     Run the udemy enroller script
 
     :param str browser: Name of the browser we want to create a driver for
-    :param bool tutorialbar_enabled:
-    :param bool discudemy_enabled:
+    :param bool udemy_scraper_enabled: Boolean signifying if udemy scraper scraper should run
     :param int max_pages: Max pages to scrape from sites (if pagination exists)
     :param bool delete_settings: Determines if we should delete old settings file
     :param bool delete_cookie: Determines if we should delete the cookie file
@@ -68,7 +67,7 @@ def parse_args() -> Namespace:
 
     :return: Args to be used in the script
     """
-    parser = argparse.ArgumentParser(description="Udemy Enroller")
+    parser = argparse.ArgumentParser(description="Watcher-udemy-learning")
     parser.add_argument(
         "--browser",
         required=False,
