@@ -2,7 +2,7 @@ SAMPLE AJAX REQUEST TO TEST OUT THE PYTHON POST REQUEST BEFORE BUILDING THE ACCO
 
 
 let xhr = new XMLHttpRequest();
-xhr.open("POST", "https://ibm-learning.udemy.com/api-2.0/users/me/subscribed-courses/533682/completed-lectures/");
+xhr.open("POST", "https://business-domain.udemy.com/api-2.0/users/me/subscribed-courses/533682/completed-lectures/");
 xhr.setRequestHeader("Accept", "application/json");
 xhr.setRequestHeader("Content-Type", "application/json");
 

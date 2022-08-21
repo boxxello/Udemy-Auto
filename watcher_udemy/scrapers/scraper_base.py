@@ -17,7 +17,7 @@ logger = logging.getLogger("watcher_udemy")
 
 class UdemyScraper(BaseScraper):
     """
-    Contains any logic related to scraping of data from ibm-learning.udemy.com
+    Contains any logic related to scraping of data from business domain.udemy.com
     """
 
 
