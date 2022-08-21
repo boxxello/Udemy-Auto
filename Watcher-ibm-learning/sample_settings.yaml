@@ -1,7 +1,7 @@
 udemy:
   email: "Example@gmail.com" # Enter your Udemy registered email here
   password: "ExamplePa$$w0rd" # Enter your Udemy password here
-  zipcode: "12345" # If Udemy requires a zipcode for your country, enter it here.
-  languages: [] # If you want to limit the languages of courses to claim e.g ["French", "Spanish"]
-  categories: []  # If you want to limit the categories of courses to claim
+  zipcode: "12345" # If Udemy requires a zipcode for your country, enter it here. (TODO:: COMPLETE AND TEST IT OUT)
+  languages: [] # If you want to limit the languages of courses to claim e.g ["French", "Spanish"] (TODO:: COMPLETE)
+  categories: []  # If you want to limit the categories of courses to claim (TODO:: CHECK IF WORKS) e.g ["Business", "IT & Software"]
   domain: [] # The business domain you're accessing this from to complete the quizzes and watch the required videos
