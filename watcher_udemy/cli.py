@@ -1,6 +1,8 @@
 import argparse
 import logging
+import os.path
 from argparse import Namespace
+from pathlib import Path
 from typing import Tuple, Union
 
 from watcher_udemy import ALL_VALID_BROWSER_STRINGS, DriverManager, Settings
@@ -48,14 +50,34 @@ def run(
     if browser:
         dm = DriverManager(browser=browser)
         logger.debug("ci arrivo browser")
-        redeem_courses_ui(
-            dm.driver,
-            settings,
-            udemy_scraper_enabled,
-            max_pages,
-            scrape_urls_from_file,
-            filename
-        )
+        if udemy_scraper_enabled:
+            if scrape_urls_from_file:
+                if os.path.exists(filename) and filename.endswith('.txt'):
+                    redeem_courses_ui(
+                        dm.driver,
+                        settings,
+                        udemy_scraper_enabled,
+                        max_pages,
+                        scrape_urls_from_file,
+                        filename
+                    )
+                else:
+                    logger.error("The file you provided either doesn't have a .txt extension or"
+                                 " doesn't actually exist.")
+                    exit(-4)
+            else:
+                redeem_courses_ui(
+                    dm.driver,
+                    settings,
+                    udemy_scraper_enabled,
+                    max_pages,
+                    scrape_urls_from_file,
+                    filename
+                )
+        else:
+            logger.error("EXITING DUE TO NO SCRAPER ENABLED, "
+                         "FUTURE IMPLEMENTATION INCOMING SOON")
+            exit(-3)
 
 
 
