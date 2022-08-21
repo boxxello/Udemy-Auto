@@ -78,4 +78,4 @@ Could I do with by making some minor changes to the code?  Yes.<br>
 
 ## Support & Maintenance Notice
 
-By using this repo/script, you agree that the authors and contributors are under no obligation to provide support for the script and can discontinue it's development, as and when necessary, without prior notice.
+By using this repo/script, you agree that the authors and contributors are under no obligation to provide support for the script and can discontinue its development, as and when necessary, without prior notice.
