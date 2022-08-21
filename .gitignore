@@ -239,7 +239,8 @@ test_tmp/
 
 #ignore file.txt
 file.txt
-
+# temporary ignore sample settings for future breaking releases
+sample_settings.yaml
 
 # ignore pypi config
  .pypirc
