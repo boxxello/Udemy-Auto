@@ -1,8 +1,5 @@
 import asyncio
-import random
-import time
 from typing import Union
-import regex
 from selenium.common.exceptions import (
     NoSuchElementException,
     TimeoutException,
