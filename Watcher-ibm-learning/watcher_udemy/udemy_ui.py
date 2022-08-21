@@ -84,42 +84,7 @@ class UdemyActionsUI:
     Contains any logic related to interacting with udemy website
     """
 
-    DOMAIN = ""
-    REQUEST_URL_NUM_LECTURES = f"{DOMAIN}/api-2.0/courses/{{}}/?fields[course]=title,num_lectures,completion_ratio"
-    REQUEST_URL_NUM_QUIZZES = f"{DOMAIN}/api-2.0/courses/{{}}/?fields[course]=num_quizzes"
-    REQUEST_URL_URL = f"{DOMAIN}/api-2.0/courses/{{}}/?fields[course]=url"
-    REQUEST_LECTURES = f"{DOMAIN}/api-2.0/users/me/subscribed-courses/{{}}/lectures"
-    REQUEST_LECTURES_NEXT = f"{DOMAIN}/api-2.0/users/me/subscribed-courses/673024/lectures/?page=4"
-    URL_TO_COURSE_ID = f"{DOMAIN}/course/{{}}/"
 
-    HEADERS = {
-        "origin": "https://ibm-learning.udemy.com/",
-        "accept": "application/json, text/plain, */*",
-        "accept-encoding": "gzip, deflate, br",
-        "Content-Type": "application/json;charset=utf-8",
-        "x-requested-with": "XMLHttpRequest",
-        "x-checkout-version": "2",
-        "referer": "https://ibm-learning.udemy.com/",
-        "authority": "ibm-learning.udemy.com"
-    }
-    COURSE_DETAILS = (
-        f"{DOMAIN}/api-2.0/courses/{{}}/?fields[course]=title,url,context_info,primary_category,primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,num_subscribers,num_quizzes,num_lectures,completion_ratio"
-    )
-    ENROLLED_COURSES_URL = (
-        f"{DOMAIN}/api-2.0/users/me/subscribed-courses/?&progress_filter=in-progress&page_size=1400")
-
-    QUIZ_URL = f"{DOMAIN}/api-2.0/courses/{{}}/subscriber-curriculum-items/?page_size=1400&fields[lecture]=title,object_index,is_published,sort_order,created,asset,supplementary_assets,is_free&fields[quiz]=title,object_index,is_published,sort_order,type&fields[practice]=title,object_index,is_published,sort_order&fields[chapter]=title,object_index,is_published,sort_order&fields[asset]=title,filename,asset_type,status,time_estimation,is_external&caching_intent=Truefields[course]=title,url,context_info,primary_category,primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,num_subscribers,num_quizzes,num_lectures,completion_ratio"
-    RESPONSES_URL = f"{DOMAIN}/api-2.0/quizzes/{{}}/assessments/?version=1&page_size=1400&fields[assessment]=id,assessment_type,prompt,correct_response,section,question_plain,related_lectures"
-    COMPLETED_QUIZ_IDS = f"{DOMAIN}/api-2.0/users/me/subscribed-courses/359550/progress/?page_size=1400&fields[course]=completed_lecture_ids,completed_quiz_ids,last_seen_page,completed_assignment_ids,first_completion_time"
-    BOH = f"{DOMAIN}/api-2.0/users/me/subscribed-courses/359550/quizzes/95416/?draft=false&fields[quiz]=id,type,title,description,object_index,num_assessments,version,duration,is_draft,pass_percent,changelog"
-    URL_SEND_RESPONSE = (
-        f"{DOMAIN}/api-2.0/users/me/subscribed-courses/{{course_id}}/user-attempted-quizzes/{{quiz_id}}/assessment-answers/")
-    #	/api-2.0/users/me/subscribed-courses/359550/quizzes/95420/user-attempted-quizzes/latest/
-    # https://ibm-learning.udemy.com/course/mastering-object-oriented-design-in-java/learn/quiz/95416#overview
-    LAST_ID_QUIZ = f"{DOMAIN}/api-2.0/users/me/subscribed-courses/{{course_id}}/quizzes/{{quiz_id}}/user-attempted-quizzes/latest"
-    URL_COURSE_NO_API = f"{DOMAIN}/course/{{course_id}}/"
-    URL_QUIZ_NOAPI = f"{DOMAIN}/course/{{url_no_id}}/learn/quiz/{{assessment_id}}#overview"
-    URL_GET_ALREADY_DONE_ASSESSMENTS = f"{DOMAIN}/api-2.0/users/me/subscribed-courses/{{course_id}}/user-attempted-quizzes/"
 
     def __init__(self, driver: WebDriver, settings: Settings, cookie_file_name: str = ".cookie"):
 
@@ -132,6 +97,44 @@ class UdemyActionsUI:
         self.stats.start_time = datetime.utcnow()
         self._cookie_file = os.path.join(get_app_dir(), cookie_file_name)
         self.already_rolled_courses = []
+
+        self.REQUEST_URL_NUM_LECTURES = f"https://{self.DOMAIN}.udemy.com/api-2.0/courses/{{}}/?fields[course]=title,num_lectures,completion_ratio"
+        self.REQUEST_URL_NUM_QUIZZES = f"https://{self.DOMAIN}.udemy.com/api-2.0/courses/{{}}/?fields[course]=num_quizzes"
+        self.REQUEST_URL_URL = f"https://{self.DOMAIN}.udemy.com/api-2.0/courses/{{}}/?fields[course]=url"
+        self.REQUEST_LECTURES = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{}}/lectures"
+        self.REQUEST_LECTURES_NEXT = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/673024/lectures/?page=4"
+        self.URL_TO_COURSE_ID = f"https://{self.DOMAIN}.udemy.com/course/{{}}/"
+
+        self.HEADERS = {
+            "origin": f"https://{self.DOMAIN}.udemy.com/",
+            "accept": "application/json, text/plain, */*",
+            "accept-encoding": "gzip, deflate, br",
+            "Content-Type": "application/json;charset=utf-8",
+            "x-requested-with": "XMLHttpRequest",
+            "x-checkout-version": "2",
+            "referer": f"https://{self.DOMAIN}.udemy.com/",
+            "authority": f"{self.DOMAIN}.udemy.com"
+        }
+        self.COURSE_DETAILS = (
+            f"{self.DOMAIN}/api-2.0/courses/{{}}/?fields[course]=title,url,context_info,primary_category,primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,num_subscribers,num_quizzes,num_lectures,completion_ratio"
+        )
+        self.ENROLLED_COURSES_URL = (
+            f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/?&progress_filter=in-progress&page_size=1400")
+
+        self.QUIZ_URL = f"https://{self.DOMAIN}.udemy.com/api-2.0/courses/{{}}/subscriber-curriculum-items/?page_size=1400&fields[lecture]=title,object_index,is_published,sort_order,created,asset,supplementary_assets,is_free&fields[quiz]=title,object_index,is_published,sort_order,type&fields[practice]=title,object_index,is_published,sort_order&fields[chapter]=title,object_index,is_published,sort_order&fields[asset]=title,filename,asset_type,status,time_estimation,is_external&caching_intent=Truefields[course]=title,url,context_info,primary_category,primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,num_subscribers,num_quizzes,num_lectures,completion_ratio"
+        self.RESPONSES_URL = f"https://{self.DOMAIN}.udemy.com/api-2.0/quizzes/{{}}/assessments/?version=1&page_size=1400&fields[assessment]=id,assessment_type,prompt,correct_response,section,question_plain,related_lectures"
+        self.COMPLETED_QUIZ_IDS = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/359550/progress/?page_size=1400&fields[course]=completed_lecture_ids,completed_quiz_ids,last_seen_page,completed_assignment_ids,first_completion_time"
+        self.BOH = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/359550/quizzes/95416/?draft=false&fields[quiz]=id,type,title,description,object_index,num_assessments,version,duration,is_draft,pass_percent,changelog"
+        self.URL_SEND_RESPONSE = (
+            f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{course_id}}/user-attempted-quizzes/{{quiz_id}}/assessment-answers/")
+        self.URL_SEND_RESPONSE_MULTIPLE = (
+            f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{course_id}}/quizzes/{{quiz_id}}/user-attempted-quizzes/{{quiz_id}}/assessment-answers/")
+        #	/api-2.0/users/me/subscribed-courses/359550/quizzes/95420/user-attempted-quizzes/latest/
+        # https://ibm-learning.udemy.com/course/mastering-object-oriented-design-in-java/learn/quiz/95416#overview
+        self.LAST_ID_QUIZ = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{course_id}}/quizzes/{{quiz_id}}/user-attempted-quizzes/latest"
+        self.URL_COURSE_NO_API = f"https://{self.DOMAIN}.udemy.com/course/{{course_id}}/"
+        self.URL_QUIZ_NOAPI = f"https://{self.DOMAIN}.udemy.com/course/{{url_no_id}}/learn/quiz/{{assessment_id}}#overview"
+        self.URL_GET_ALREADY_DONE_ASSESSMENTS = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{course_id}}/user-attempted-quizzes/"
 
     def login(self, is_retry=False) -> None:
         """
@@ -249,11 +252,12 @@ class UdemyActionsUI:
 
 
             else:
-                dummy_url = '//404error'
-                self.driver.get(f"{self.DOMAIN + dummy_url}")
+                #hitting a fake url of doamin to load the cookies
+                dummy_url = '404error'
+                self.driver.get(f"https://{self.DOMAIN}.udemy.com//{dummy_url}")
                 for cookie in cookie_details:
                     self.driver.add_cookie(cookie)
-                self.driver.get(f"{self.DOMAIN}")
+                self.driver.get(f"https://{self.DOMAIN}.udemy.com")
 
             try:
                 ibm_learning_subm = WebDriverWait(self.driver, 30).until(
