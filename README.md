@@ -18,7 +18,8 @@ Also, don't forget to **Fork & Star the repository if you like it!**
 ** **_Disclaimer & WARNINGS:_**
 
 1. **Use** this ONLY for **Educational Purposes!** By using this code you agree
-   that **I'm not responsible for any kind of trouble** caused by the code. **THIS PROJECT IS NOT AFFILIATED WITH UDEMY.**
+   that **I'm not responsible for any kind of trouble** caused by the code. <br>
+   **THIS PROJECT IS NOT AFFILIATED WITH UDEMY.**
 2. **Make sure web-scraping is legal in your region.**
 3. This is **NOT a hacking script**!
 ---
