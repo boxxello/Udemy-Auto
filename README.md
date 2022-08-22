@@ -65,10 +65,10 @@ Similar instructions applies for poetry.
 - `--file=<name_of_the_file.txt>` : Name of the file you want to scrape urls from
 - `--scrape_from_file` : Enable scraping from file instead of scraping from the "in progress" courses.
 
-5 . Run the script in terminal with your target arguments:
+5 . Run the script in terminal with your target arguments once you activated the venv.
 
-- `udemy_watcher`
-- `udemy_watcher --browser=chrome --scrape_from_file --file=file.txt`
+- `python udemy_watcher.py`
+- `python udemy_watcher.py --browser=chrome --scrape_from_file --file=file.txt`
 
 ## FAQs
 
