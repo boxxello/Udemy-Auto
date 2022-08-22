@@ -115,7 +115,8 @@ class UdemyScraper(BaseScraper):
                 else:
                     list_of_crs.append(tuple[1])
         return list_of_grp, list_of_crs
-
+    #we use coroutines and add the typing hint Any Any for .send() and .throw() defaults.
+    #this typing hint str | None is actually new, from 3.10, 3.8 would have been Union[str, None]
     async def get_udemy_course_link(self, url: str) -> Coroutine[Any, Any, str | None]:
         """
         Gets the udemy course link

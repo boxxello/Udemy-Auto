@@ -84,8 +84,6 @@ class UdemyActionsUI:
     Contains any logic related to interacting with udemy website
     """
 
-
-
     def __init__(self, driver: WebDriver, settings: Settings, cookie_file_name: str = ".cookie"):
 
         self.driver = driver
@@ -128,7 +126,7 @@ class UdemyActionsUI:
         self.URL_SEND_RESPONSE = (
             f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{course_id}}/user-attempted-quizzes/{{quiz_id}}/assessment-answers/")
         self.URL_SEND_RESPONSE_MULTIPLE = (
-            f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{course_id}}/quizzes/{{quiz_id}}/user-attempted-quizzes/{{quiz_id}}/assessment-answers/")
+            f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{course_id}}/quizzes/{{quiz_id}}/user-attempted-quizzes/{{assessment_initial_id}}")
         #	/api-2.0/users/me/subscribed-courses/359550/quizzes/95420/user-attempted-quizzes/latest/
         self.LAST_ID_QUIZ = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{course_id}}/quizzes/{{quiz_id}}/user-attempted-quizzes/latest"
         self.URL_COURSE_NO_API = f"https://{self.DOMAIN}.udemy.com/course/{{course_id}}/"
@@ -251,7 +249,7 @@ class UdemyActionsUI:
 
 
             else:
-                #hitting a fake url of doamin to load the cookies
+                # hitting a fake url of doamin to load the cookies
                 dummy_url = '404error'
                 self.driver.get(f"https://{self.DOMAIN}.udemy.com//{dummy_url}")
                 for cookie in cookie_details:
@@ -924,8 +922,45 @@ class UdemyActionsUI:
     def _solve_single_quiz_test(self, course_id):
         assessment_lst = self._get_assessments(course_id)
         processes = []
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            for idx, x in enumerate(assessment_lst):
+        #build a dict with key as assessment_initial_id and value the number of quizzes with the same id
+        initial_id_counts = {}
+        for entry in assessment_lst:
+            if entry["assessment_initial_type"] == "practice-test":
+                initial_id = entry["assessment_initial_id"]
+                initial_id_counts[initial_id] = initial_id_counts.get(initial_id, 0) + 1
+        logger.info(f"printo il dizionario {initial_id_counts}")
+        lst_of_dicts={}
+        # with ThreadPoolExecutor(max_workers=10) as executor:
+        #     for idx, x in enumerate(assessment_lst):
+        #         if x.get('assessment_initial_type') == 'practice-test':
+        #             assessment_lst_already_done = self._get_already_done_assessments(course_id,
+        #                                                                              x.get('assessment_initial_id'))
+        #             if assessment_lst_already_done is None:
+        #                 print(f"Quiz idx: {idx}\n{x} \n\n")
+        #                 if not x.get('assessment_initial_id') in self._get_completed_assessments(course_id):
+        #                     logger.info(f"Found the first assessment real id for {x.get('assessment_initial_id')}")
+        #                     self._solve_first_quiz_with_driver_test(course_id, x)
+        #                     lst_of_dicts[x.get('assessment_initial_id')] = initial_id_counts.get(x.get('assessment_initial_id'), 0) + 1
+        #             else:
+        #                 logger.info(f"Else, sending xhr req")
+        #                 processes.append(
+        #                     executor.submit(self._solve_quiz_req_helper, course_id, assessment_lst_already_done, x))
+        #                 lst_of_dicts[x.get('assessment_initial_id')] = initial_id_counts.get(
+        #                     x.get('assessment_initial_id'), 0) + 1
+        #                 for a,b in lst_of_dicts.items():
+        #                     print(f"\na {a}, b {b}\n\n")
+        #                     for c,d in initial_id_counts.items():
+        #                         if c==a-1 and b==d-1:
+        #                             processes.append(
+        #                                 executor.submit(self.send_completition_req_quiz_multiple, course_id,
+        #                                                 assessment_lst_already_done, x))
+        # logger.info("Solving the remaining assessments")
+        # start = time.time()
+        # for task in as_completed(processes):
+        #     logger.info(task.result())
+        # logger.info(f'Time taken to complete {len(assessment_lst)} lectures: {time.time() - start}')
+        for idx, x in enumerate(assessment_lst):
+            if x.get('assessment_initial_type') == 'practice-test':
                 assessment_lst_already_done = self._get_already_done_assessments(course_id,
                                                                                  x.get('assessment_initial_id'))
                 if assessment_lst_already_done is None:
@@ -933,16 +968,28 @@ class UdemyActionsUI:
                     if not x.get('assessment_initial_id') in self._get_completed_assessments(course_id):
                         logger.info(f"Found the first assessment real id for {x.get('assessment_initial_id')}")
                         self._solve_first_quiz_with_driver_test(course_id, x)
+                        lst_of_dicts[x.get('assessment_initial_id')] = initial_id_counts.get(x.get('assessment_initial_id'), 0) + 1
                 else:
                     logger.info(f"Else, sending xhr req")
-                    processes.append(
-                        executor.submit(self._solve_quiz_req_helper, course_id, assessment_lst_already_done, x))
+                    self._solve_quiz_req_helper( course_id, assessment_lst_already_done, x)
+                    lst_of_dicts[x.get('assessment_initial_id')] = initial_id_counts.get(
+                        x.get('assessment_initial_id'), 0) + 1
+                    for a,b in lst_of_dicts.items():
+                        print(f"\na {a}, b {b}\n\n")
+                        for c,d in initial_id_counts.items():
+                            if c==a-1 and b==d-1:
+                                self.send_completition_req_quiz_multiple( course_id,
+                                                    assessment_lst_already_done, x)
 
-        logger.info("Solving the remaining assessments")
-        start = time.time()
-        for task in as_completed(processes):
-            logger.info(task.result())
-        logger.info(f'Time taken to complete {len(assessment_lst)} lectures: {time.time() - start}')
+
+    def send_completition_req_quiz_multiple(self, course_id, asessment_initial_id,x ):
+        json_to_send={"marked_completed":True}
+        logger.info(f"arrivato momento {asessment_initial_id}, poi x: {x}, poi {course_id}")
+
+        response = self.session.post(
+            self.URL_SEND_RESPONSE_MULTIPLE.format(course_id=course_id, quiz_id=x.get('id'), asessment_initial_id=asessment_initial_id),
+            json=json_to_send)
+        return response.status_code, response.text
 
     def _solve_first_quiz_with_driver_test(self, course_id, x):
 
