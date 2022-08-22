@@ -28,7 +28,7 @@ Also, don't forget to **Fork & Star the repository if you like it!**
 
 *** How to Install the Requirements?
 
-**Tested Python version:** [Python 3.8+](https://www.python.org/downloads/)
+**Tested Python version:** [Python 3.10+](https://www.python.org/downloads/)
 
 **(Windows users only) Required Microsoft Visual C++ 14.0+ version:** [Microsoft Visual C++ 14.0+](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
 
