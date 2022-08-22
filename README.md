@@ -28,7 +28,7 @@ Also, don't forget to **Fork & Star the repository if you like it!**
 
 *** How to Install the Requirements?
 
-**Tested Python version:** [Python 3.8+](https://www.python.org/downloads/)
+**Tested Python version:** [Python 3.10+](https://www.python.org/downloads/)
 
 **(Windows users only) Required Microsoft Visual C++ 14.0+ version:** [Microsoft Visual C++ 14.0+](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
 
@@ -65,10 +65,10 @@ Similar instructions applies for poetry.
 - `--file=<name_of_the_file.txt>` : Name of the file you want to scrape urls from
 - `--scrape_from_file` : Enable scraping from file instead of scraping from the "in progress" courses.
 
-5 . Run the script in terminal with your target arguments:
+5 . Run the script in terminal with your target arguments once you activated the venv.
 
-- `udemy_watcher`
-- `udemy_watcher --browser=chrome --scrape_from_file --file=file.txt`
+- `python udemy_watcher.py`
+- `python udemy_watcher.py --browser=chrome --scrape_from_file --file=file.txt`
 
 ## FAQs
 
