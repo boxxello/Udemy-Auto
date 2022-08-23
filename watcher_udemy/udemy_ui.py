@@ -12,7 +12,6 @@ from enum import Enum
 from typing import List, Dict, Optional
 
 import requests
-from price_parser import Price
 from regex import regex
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
