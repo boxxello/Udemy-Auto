@@ -28,3 +28,4 @@ validators==0.20.0
 webdriver-manager==3.7.0
 wsproto==1.1.0
 yarl==1.8.1
+regex
