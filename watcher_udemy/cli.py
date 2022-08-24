@@ -139,7 +139,7 @@ def parse_args() -> Namespace:
     parser.add_argument(
         "--scrape_from_file",
         action="store_true",
-        default=True,
+        default=False,
         help="Enable scraping from file ",
     )
 

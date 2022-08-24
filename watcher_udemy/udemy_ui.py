@@ -977,7 +977,7 @@ class UdemyActionsUI:
                     try:
                         try:
 
-                            WebDriverWait(self.driver, 10). \
+                            WebDriverWait(self.driver, 15). \
                                 until(EC.visibility_of_element_located(
                                 (By.XPATH, f"//button//div[contains(text(), '{filename}')]"))) \
                                 .click()
@@ -985,14 +985,14 @@ class UdemyActionsUI:
                             logger.info(f"couldn't find filename {e}")
                             continue
 
-                        div_class_ace_content = "//textarea[@class='ace_text-input']"
-                        element = WebDriverWait(self.driver, 10). \
-                            until(EC.presence_of_element_located((By.XPATH, div_class_ace_content)))
-                        element.send_keys(Keys.CONTROL + "a")
-                        element.send_keys(content)
-                        time.sleep(3)
-                        # self.slow_type_test(element, content, delay=0.01)
 
+                        editor_id='editor'
+                        WebDriverWait(self.driver, 10). \
+                            until(EC.presence_of_element_located((By.ID, editor_id)))
+                        WebDriverWait(self.driver, 10).\
+                            until(lambda driver: driver.execute_script('return document.readyState') == 'complete')
+                        # logger.info('ace.edit("{}").setValue("{}")'.format(editor_id, content))
+                        self.driver.execute_script('ace.edit({}).setValue({})'.format(json.dumps(editor_id), json.dumps(content)))
 
                     except TimeoutException as e:
                         logger.info(f"TimeoutException for {filename}, exception {e}", exc_info=True)
@@ -1013,41 +1013,7 @@ class UdemyActionsUI:
             except Exception as e:
                 logger.warning(f"Exception while solving coding exercise {e}", exc_info=True)
 
-    def slow_type_test(self, element: WebElement, text: str, delay: float = 0.1):
-        """Send a text to an element one character at a time with a delay."""
 
-
-
-        text_to_split = text.split('\n')
-        logger.debug(text_to_split)
-        for x in text_to_split:
-
-            element.send_keys(x.replace("    ", Keys.TAB))
-            if len(text_to_split)>1:
-                element.send_keys(Keys.SHIFT + Keys.ENTER)
-
-
-
-    def slow_type(self, element: WebElement, text: str, delay: float = 0.1):
-        """Send a text to an element one character at a time with a delay."""
-
-        text_to_split = text.split('\n')
-        logger.debug(repr(text_to_split))
-        for x in text_to_split:
-
-            text_tabbed=x.split('\t')
-            for y in text_tabbed:
-                element.send_keys(y)
-                if not y==text_tabbed[-1]:
-                    element.send_keys(Keys.TAB)
-            if not x == text_to_split[-1]:
-                element.send_keys(Keys.ENTER)
-
-            # if x==text_to_split[-1]:
-            #     element.send_keys(x)
-            # else:
-            #
-            time.sleep(delay)
 
     def solve_last_part_multiple_test(self, course_id, x):
         if url_to_use := self._get_real_course_link_from_id(course_id):
