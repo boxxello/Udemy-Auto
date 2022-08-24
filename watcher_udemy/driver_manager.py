@@ -42,6 +42,7 @@ class DriverManager:
             caps['goog:loggingPrefs'] = {'performance': 'ALL'}
             #disabling the annoying chrome notification
             self.options = webdriver.ChromeOptions()
+            self.options.add_argument("--mute-audio")
             self.options.add_experimental_option("useAutomationExtension", False)
             self.options.add_experimental_option("excludeSwitches", ["enable-automation"])
             self.driver = webdriver.Chrome( ChromeDriverManager().install(), options=self.options, desired_capabilities=caps)
