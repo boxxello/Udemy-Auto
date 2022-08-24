@@ -12,6 +12,7 @@ from enum import Enum
 from typing import List, Dict, Optional
 
 import requests
+from price_parser import Price
 from regex import regex
 from selenium.common.exceptions import NoSuchElementException, TimeoutException, StaleElementReferenceException
 from selenium.webdriver.common.by import By
@@ -171,13 +172,13 @@ class UdemyActionsUI:
                             EC.presence_of_element_located((By.ID, input_email))
                         )
                         button.click()
-                        email_element = self.driver.find_element_by_id(input_email)
+                        email_element = self.driver.find_element(By.ID, input_email)
                         email_element.send_keys(self.settings.email)
                         WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.NAME, "checkbox1_lbl"))
                                                              )
-                        password_element = self.driver.find_element_by_name("password")
+                        password_element = self.driver.find_element(By.NAME,"password")
                         password_element.send_keys(self.settings.password)
-                        remind_button = self.driver.find_element_by_name("checkbox1_lbl")
+                        remind_button = self.driver.find_element(By.NAME,"checkbox1_lbl")
                         remind_button.click()
 
                         login_button = WebDriverWait(self.driver, 10).until(
@@ -196,7 +197,7 @@ class UdemyActionsUI:
                                     "Solve otp insertion. Hit enter once solved "
                                 )
                                 try:
-                                    submit_btn = self.driver.find_element_by_id("submit_btn")
+                                    submit_btn = self.driver.find_element(By.ID,"submit_btn")
                                     submit_btn.click()
                                 except NoSuchElementException:
                                     pass
@@ -264,7 +265,7 @@ class UdemyActionsUI:
                 )
                 logger.info("Logged in to udemy, trying to retrieve button")
                 self.logged_in = True
-                my_learning = self.driver.find_elements_by_tag_name('span')
+                my_learning = self.driver.find_elements(By.TAG_NAME,'span')
                 for x in my_learning:
                     if x.text:
                         if x.text.upper() == 'My Learning'.upper():
@@ -395,7 +396,7 @@ class UdemyActionsUI:
         except TimeoutException:
             return None
         else:
-            dummy_element = self.driver.find_elements_by_xpath(dummy_elm_xpath)
+            dummy_element = self.driver.find_elements(By.XPATH,dummy_elm_xpath)
             for x in dummy_element:
                 if x.get_attribute("data-module-args") is not None:
                     attr = x.get_attribute("data-module-args")
@@ -443,7 +444,7 @@ class UdemyActionsUI:
         if url is not None:
             self.driver.get(url)
 
-        links = self.driver.find_elements_by_tag_name('a')
+        links = self.driver.find_element(By.TAG_NAME,'a')
         links = [link.get_attribute('href') for link in links]
         return links
 
@@ -515,10 +516,8 @@ class UdemyActionsUI:
 
             breadcrumbs_path = "udlite-breadcrumb"
             breadcrumbs_text_path = "udlite-heading-sm"
-            breadcrumbs: WebElement = self.driver.find_element_by_class_name(
-                breadcrumbs_path
-            )
-            breadcrumbs = breadcrumbs.find_elements_by_class_name(breadcrumbs_text_path)
+            breadcrumbs = self.driver.find_element(By.CLASS_NAME,breadcrumbs_path)
+            breadcrumbs = breadcrumbs.find_elements(By.CLASS_NAME,breadcrumbs_text_path)
             breadcrumb_text = [bc.text for bc in breadcrumbs]  # Get only the text
 
             for category in self.settings.categories:
@@ -536,7 +535,7 @@ class UdemyActionsUI:
     def _check_price(self, course_name):
         course_is_free = True
         price_xpath = "//div[contains(@data-purpose, 'total-amount-summary')]//span[2]"
-        price_element = self.driver.find_element_by_xpath(price_xpath)
+        price_element = self.driver.find_element(By.XPATH,price_xpath)
 
         # We are only interested in the element which is displaying the price details
         if price_element.is_displayed():
@@ -563,7 +562,7 @@ class UdemyActionsUI:
             list_price_xpath = (
                 "//div[starts-with(@class, 'order-summary--original-price-text')]//span"
             )
-            list_price_element = self.driver.find_element_by_xpath(list_price_xpath)
+            list_price_element = self.driver.find_element(By.XPATH, list_price_xpath)
             list_price = Price.fromstring(list_price_element.text)
             if list_price.amount is not None:
                 self.stats.prices.append(list_price.amount)
@@ -577,7 +576,7 @@ class UdemyActionsUI:
         """
         is_robot = True
         try:
-            self.driver.find_element_by_id("px-captcha")
+            self.driver.find_element(By.ID,"px-captcha")
         except NoSuchElementException:
             is_robot = False
         return is_robot
@@ -752,12 +751,12 @@ class UdemyActionsUI:
                     menu_items = WebDriverWait(self.driver, 10).until(
                         EC.presence_of_element_located((By.XPATH, locale_xpath_ul_resp))
                     )
-                    items = self.driver.find_element_by_xpath(locale_xpath_ul_resp)
+                    items = self.driver.find_element(By.XPATH,locale_xpath_ul_resp)
                 except TimeoutException:
                     logger.error("TimeoutException, couldn't find quiz menu/answers")
                     return None
 
-                ul_elements = items.find_elements_by_tag_name('li')
+                ul_elements = items.find_elements(By.TAG_NAME,'li')
                 # logger.debug(ul_elements)
                 correct_response = x.get('correct_response')
                 print(correct_response)
@@ -979,7 +978,7 @@ class UdemyActionsUI:
                         try:
 
                             WebDriverWait(self.driver, 10). \
-                                until(EC.element_to_be_clickable(
+                                until(EC.visibility_of_element_located(
                                 (By.XPATH, f"//button//div[contains(text(), '{filename}')]"))) \
                                 .click()
                         except TimeoutException as e:
@@ -990,8 +989,9 @@ class UdemyActionsUI:
                         element = WebDriverWait(self.driver, 10). \
                             until(EC.presence_of_element_located((By.XPATH, div_class_ace_content)))
                         element.send_keys(Keys.CONTROL + "a")
-                        element.send_keys(Keys.DELETE)
-                        self.slow_type(element, content, delay=0.01)
+                        element.send_keys(content)
+                        time.sleep(3)
+                        # self.slow_type_test(element, content, delay=0.01)
 
 
                     except TimeoutException as e:
@@ -1009,14 +1009,44 @@ class UdemyActionsUI:
                 WebDriverWait(self.driver, 10). \
                     until(EC.element_to_be_clickable((By.XPATH, next_question_btn))) \
                     .click()
+
             except Exception as e:
                 logger.warning(f"Exception while solving coding exercise {e}", exc_info=True)
 
+    def slow_type_test(self, element: WebElement, text: str, delay: float = 0.1):
+        """Send a text to an element one character at a time with a delay."""
+
+
+
+        text_to_split = text.split('\n')
+        logger.debug(text_to_split)
+        for x in text_to_split:
+
+            element.send_keys(x.replace("    ", Keys.TAB))
+            if len(text_to_split)>1:
+                element.send_keys(Keys.SHIFT + Keys.ENTER)
+
+
+
     def slow_type(self, element: WebElement, text: str, delay: float = 0.1):
         """Send a text to an element one character at a time with a delay."""
+
         text_to_split = text.split('\n')
+        logger.debug(repr(text_to_split))
         for x in text_to_split:
-            element.send_keys(x + "\n")
+
+            text_tabbed=x.split('\t')
+            for y in text_tabbed:
+                element.send_keys(y)
+                if not y==text_tabbed[-1]:
+                    element.send_keys(Keys.TAB)
+            if not x == text_to_split[-1]:
+                element.send_keys(Keys.ENTER)
+
+            # if x==text_to_split[-1]:
+            #     element.send_keys(x)
+            # else:
+            #
             time.sleep(delay)
 
     def solve_last_part_multiple_test(self, course_id, x):
@@ -1098,13 +1128,13 @@ class UdemyActionsUI:
                     menu_items = WebDriverWait(self.driver, 10).until(
                         EC.presence_of_element_located((By.XPATH, locale_xpath_ul_resp))
                     )
-                    items = self.driver.find_element_by_xpath(locale_xpath_ul_resp)
+                    items = self.driver.find_element(By.XPATH,locale_xpath_ul_resp)
                 except TimeoutException:
                     logger.error("TimeoutException, couldn't find quiz menu/answers")
                     return None
 
                 if x.get('assessment_initial_type') == 'simple-quiz':
-                    ul_elements = items.find_elements_by_tag_name('li')
+                    ul_elements = items.find_elements(By.TAG_NAME,'li')
                     # logger.debug(ul_elements)
                     correct_response = x.get('correct_response')
                     print(correct_response)

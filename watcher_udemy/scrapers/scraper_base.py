@@ -65,7 +65,7 @@ class UdemyScraper(BaseScraper):
             # for counter, course in enumerate(udemy_links):
             #     logger.debug(f"Received Link {counter + 1} : {course}")
 
-            soup = self.driver.find_element_by_xpath("/html/body")
+            soup = self.driver.find_element(By.XPATH,"/html/body")
             all_links = BeautifulSoup(soup.get_attribute("innerHTML"), "html.parser")
             all_udemy_links = self.get_relevant_links(all_links)
             for counter, course in enumerate(all_udemy_links):
