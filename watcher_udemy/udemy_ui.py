@@ -96,12 +96,11 @@ class UdemyActionsUI:
         self._cookie_file = os.path.join(get_app_dir(), cookie_file_name)
         self.already_rolled_courses = []
 
-        self.REQUEST_URL_NUM_LECTURES = f"https://{self.DOMAIN}.udemy.com/api-2.0/courses/{{}}/?fields[course]=title,num_lectures,completion_ratio"
-        self.REQUEST_URL_NUM_QUIZZES = f"https://{self.DOMAIN}.udemy.com/api-2.0/courses/{{}}/?fields[course]=num_quizzes"
-        self.REQUEST_URL_URL = f"https://{self.DOMAIN}.udemy.com/api-2.0/courses/{{}}/?fields[course]=url"
-        self.REQUEST_LECTURES = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{}}/lectures"
-        self.REQUEST_LECTURES_NEXT = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/673024/lectures/?page=4"
         self.URL_TO_COURSE_ID = f"https://{self.DOMAIN}.udemy.com/course/{{}}/"
+        self.URL_COURSE_NO_API = f"https://{self.DOMAIN}.udemy.com/course/{{course_id}}/"
+        self.URL_QUIZ_NOAPI = f"https://{self.DOMAIN}.udemy.com/course/{{url_no_id}}/learn/quiz/{{assessment_id}}#overview"
+        self.URL_QUIZ_MULTIPLE_NOAPI = f"https://{self.DOMAIN}.udemy.com/course/{{url_no_id}}/learn/quiz/{{assessment_id}}/test#overview"
+        self.URL_GET_ALREADY_DONE_ASSESSMENTS = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{course_id}}/user-attempted-quizzes/"
 
         self.HEADERS = {
             "origin": f"https://{self.DOMAIN}.udemy.com/",
@@ -119,21 +118,22 @@ class UdemyActionsUI:
         self.ENROLLED_COURSES_URL = (
             f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/?&progress_filter=in-progress&page_size=1400")
 
+
+        self.REQUEST_URL_NUM_LECTURES = f"https://{self.DOMAIN}.udemy.com/api-2.0/courses/{{}}/?fields[course]=title,num_lectures,completion_ratio"
+        self.REQUEST_URL_NUM_QUIZZES = f"https://{self.DOMAIN}.udemy.com/api-2.0/courses/{{}}/?fields[course]=num_quizzes"
+        self.REQUEST_URL_URL = f"https://{self.DOMAIN}.udemy.com/api-2.0/courses/{{}}/?fields[course]=url"
+        self.REQUEST_LECTURES = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{}}/lectures"
         self.QUIZ_URL = f"https://{self.DOMAIN}.udemy.com/api-2.0/courses/{{}}/subscriber-curriculum-items/?page_size=1400&fields[lecture]=title,object_index,is_published,sort_order,created,asset,supplementary_assets,is_free&fields[quiz]=title,object_index,is_published,sort_order,type&fields[practice]=title,object_index,is_published,sort_order&fields[chapter]=title,object_index,is_published,sort_order&fields[asset]=title,filename,asset_type,status,time_estimation,is_external&caching_intent=Truefields[course]=title,url,context_info,primary_category,primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,num_subscribers,num_quizzes,num_lectures,completion_ratio"
         self.RESPONSES_URL = f"https://{self.DOMAIN}.udemy.com/api-2.0/quizzes/{{}}/assessments/?version=1&page_size=1400&fields[assessment]=id,assessment_type,prompt,correct_response,section,question_plain,related_lectures"
         self.COMPLETED_QUIZ_IDS = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/359550/progress/?page_size=1400&fields[course]=completed_lecture_ids,completed_quiz_ids,last_seen_page,completed_assignment_ids,first_completion_time"
-        self.BOH = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/359550/quizzes/95416/?draft=false&fields[quiz]=id,type,title,description,object_index,num_assessments,version,duration,is_draft,pass_percent,changelog"
+        #self.BOH = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/359550/quizzes/95416/?draft=false&fields[quiz]=id,type,title,description,object_index,num_assessments,version,duration,is_draft,pass_percent,changelog"
         self.URL_SEND_RESPONSE = (
             f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{course_id}}/user-attempted-quizzes/{{quiz_id}}/assessment-answers/")
         self.URL_SEND_RESPONSE_MULTIPLE = (
             f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{course_id}}/quizzes/{{quiz_id}}/user-attempted-quizzes/{{assessment_initial_id}}/")
-        #	/api-2.0/users/me/subscribed-courses/359550/quizzes/95420/user-attempted-quizzes/latest/
-        self.LAST_ID_QUIZ = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{course_id}}/quizzes/{{quiz_id}}/user-attempted-quizzes/latest"
-        self.URL_COURSE_NO_API = f"https://{self.DOMAIN}.udemy.com/course/{{course_id}}/"
-        self.URL_QUIZ_NOAPI = f"https://{self.DOMAIN}.udemy.com/course/{{url_no_id}}/learn/quiz/{{assessment_id}}#overview"
-        self.URL_QUIZ_MULTIPLE_NOAPI = f"https://{self.DOMAIN}.udemy.com/course/{{url_no_id}}/learn/quiz/{{assessment_id}}/test#overview"
-        self.URL_GET_ALREADY_DONE_ASSESSMENTS = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{course_id}}/user-attempted-quizzes/"
 
+        self.LAST_ID_QUIZ = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{course_id}}/quizzes/{{quiz_id}}/user-attempted-quizzes/latest"
+        #https://business-learning.udemy.com/api-2.0/users/me/subscribed-courses/629302/quizzes
     def login(self, is_retry=False) -> None:
         """
         Login to your udemy account
@@ -664,10 +664,8 @@ class UdemyActionsUI:
                 for y in results:
                     y.update({'assessment_initial_type': x[1]})
                     y.update({'assessment_initial_id': x[0]})
-                    if y.get('_class') != 'lecture':
-
-                        if y.get('_class') == 'assessment':
-                            assessment_lst.append(y)
+                    if y.get('_class') == 'assessment':
+                        assessment_lst.append(y)
             for y in assessment_lst:
                 logger.info(f"Found assessment id {y['id']}, quiz id {y['assessment_initial_id']}")
             return assessment_lst
@@ -725,21 +723,6 @@ class UdemyActionsUI:
                 url_to_use := self.validate_basic_quiz_url(current_url, self.settings.domain)) else None
 
     def _solve_first_quiz_with_driver(self, course_id: int, x: json):
-
-        # self.driver.get(self.URL_COURSE_NO_API.format(course_id=course_id))
-        # dummy_elm_xpath = (
-        #     "//div[starts-with(@class, 'ud-app-loader')][@data-module-args]"
-        # )
-        # try:
-        #     dummy_element = (
-        #         WebDriverWait(self.driver, 10)
-        #         .until(EC.presence_of_element_located((By.XPATH, dummy_elm_xpath))))
-        # except TimeoutException:
-        #     logger.warning("Couldn't find dummy element to solve quiz")
-        #     return None
-        # else:
-        #     current_url = self.driver.current_url
-        #     if url_to_use := self.validate_basic_quiz_url(current_url, self.settings.domain):
 
         if url_to_use := self._get_real_course_link_from_id(course_id):
             url_of_quiz = self.URL_QUIZ_NOAPI.format(url_no_id=url_to_use, assessment_id=x['assessment_initial_id'])
@@ -923,6 +906,7 @@ class UdemyActionsUI:
         assessment_lst = self._get_assessments(course_id)
         # build a dict with key as assessment_initial_id and value the number of quizzes with the same id
         initial_id_counts = {}
+
         for entry in assessment_lst:
             if entry["assessment_initial_type"] == "practice-test":
                 initial_id = entry["assessment_initial_id"]
@@ -954,7 +938,7 @@ class UdemyActionsUI:
                                 if self.solve_last_part_multiple_test(course_id, x):
                                     logger.info(f"Congratulations, successfully completed quiz {x.get('assessment_initial_id')}")
                                 # logger.info(f"Response {self.send_completition_req_quiz_multiple( course_id, assessment_lst_already_done, x)}")
-            else:
+            elif x.get('assessment_initial_type')== 'multiple-choice' or x.get('assessment_initial_type') == 'simple-quiz':
                 assessment_lst_already_done = self._get_already_done_assessments\
                     (course_id, x.get('assessment_initial_id'))
                 if assessment_lst_already_done is None:
@@ -965,6 +949,50 @@ class UdemyActionsUI:
                 else:
                     logger.info(f"Else, sending xhr req")
                     logger.info(self._solve_quiz_req_helper(course_id, assessment_lst_already_done, x))
+
+            elif x.get('assessment_type') ==  'coding-problem' or x.get('assessment_initial_type') == 'coding-exercise':
+                assessment_lst_already_done = self._get_already_done_assessments \
+                    (course_id, x.get('assessment_initial_id'))
+                if assessment_lst_already_done is None:
+                    print(f"Quiz idx: {idx}\n{x} \n\n")
+                    self._solve_coding_problem(course_id, x)
+
+    def _solve_coding_problem(self, course_id, x:json):
+
+        if url_to_use := self._get_real_course_link_from_id(course_id):
+            url_of_quiz = self.URL_QUIZ_NOAPI.format(url_no_id=url_to_use, assessment_id=x['assessment_initial_id'])
+            self.driver.get(url_of_quiz)
+
+            solution_files=x.get('prompt').get('solution_files')
+            for x in solution_files:
+                filename=x.get('file_name')
+                content=x.get('content')
+                try:
+                    try:
+
+                        WebDriverWait(self.driver, 10).\
+                            until(EC.element_to_be_clickable((By.XPATH, f"//button//div[contains(text(), '{filename}')]")))\
+                            .click()
+                    except TimeoutException as e:
+                        logger.info(f"couldn't find filename {e}")
+                        continue
+
+                    div_class_ace_content="//div[@class='ace_content']"
+                    WebDriverWait(self.driver, 10).\
+                        until(EC.element_to_be_clickable((By.XPATH, div_class_ace_content)))\
+                        .click()
+                    WebDriverWait(self.driver, 10).\
+                        until(EC.element_to_be_clickable((By.XPATH, div_class_ace_content)))\
+                        .send_keys(content)
+                    next_question_btn="//button[@data-purpose='go-to-next']"
+                    WebDriverWait(self.driver, 10).\
+                        until(EC.element_to_be_clickable((By.XPATH, next_question_btn)))\
+                        .click()
+
+                except TimeoutException as e:
+                    logger.info(f"TimeoutException for {filename}, exception {e}")
+                    continue
+
 
     def solve_last_part_multiple_test(self, course_id, x):
         if url_to_use := self._get_real_course_link_from_id(course_id):
@@ -1019,109 +1047,97 @@ class UdemyActionsUI:
         return response.status_code, response.text
 
     def _solve_first_quiz_with_driver_test(self, course_id, x):
+        url_to_use=self._get_real_course_link_from_id(course_id)
+        if url_to_use:
+            url_of_quiz = self.URL_QUIZ_NOAPI.format(url_no_id=url_to_use,
+                                                     assessment_id=x['assessment_initial_id'])
+            self.driver.get(url_of_quiz)
+            logger.info(f"Found quiz url {url_of_quiz}")
+            try:
+                resume_play_quiz_btn = "//button[@data-purpose='start-or-resume-quiz']"
+                resume_play_quiz_btn_2 = "//button[@data-purpose='start-quiz']"
 
-        self.driver.get(self.URL_COURSE_NO_API.format(course_id=course_id))
-        dummy_elm_xpath = (
-            "//div[starts-with(@class, 'ud-app-loader')][@data-module-args]"
-        )
-        try:
-            dummy_element = (
-                WebDriverWait(self.driver, 10)
-                .until(EC.presence_of_element_located((By.XPATH, dummy_elm_xpath))))
-        except TimeoutException:
-            logger.warning("Couldn't find dummy element to solve quiz")
-            return None
-        else:
-            current_url = self.driver.current_url
-            if url_to_use := self.validate_basic_quiz_url(current_url, self.settings.domain):
-                url_of_quiz = self.URL_QUIZ_NOAPI.format(url_no_id=url_to_use,
-                                                         assessment_id=x['assessment_initial_id'])
-                self.driver.get(url_of_quiz)
-                logger.info(f"Found quiz url {url_of_quiz}")
                 try:
-                    resume_play_quiz_btn = "//button[@data-purpose='start-or-resume-quiz']"
-                    resume_play_quiz_btn_2 = "//button[@data-purpose='start-quiz']"
 
-                    try:
+                    WebDriverWait(self.driver, 10).until(
+                        EC.element_to_be_clickable((By.XPATH, resume_play_quiz_btn))
+                    ).click()
 
-                        WebDriverWait(self.driver, 10).until(
-                            EC.element_to_be_clickable((By.XPATH, resume_play_quiz_btn))
-                        ).click()
-
-                    except TimeoutException:
-                        logger.warning("couldn't find resume button, already completed quiz")
-                        WebDriverWait(self.driver, 10).until(
-                            EC.element_to_be_clickable((By.XPATH, resume_play_quiz_btn_2))
-                        ).click()
-                    try:
-                        locale_xpath_ul_resp = "//ul[@aria-labelledby='question-prompt']"
-                        menu_items = WebDriverWait(self.driver, 10).until(
-                            EC.presence_of_element_located((By.XPATH, locale_xpath_ul_resp))
-                        )
-                        items = self.driver.find_element_by_xpath(locale_xpath_ul_resp)
-                    except TimeoutException:
-                        logger.error("TimeoutException, couldn't find quiz menu/answers")
-                        return None
-
-                    if x.get('assessment_initial_type') == 'simple-quiz':
-                        ul_elements = items.find_elements_by_tag_name('li')
-                        # logger.debug(ul_elements)
-                        correct_response = x.get('correct_response')
-                        print(correct_response)
-                        lst_of_correct_responses = []
-                        for y in correct_response:
-                            ord_of_char = ord(y)
-                            reset_to_0 = ord_of_char - 97
-                            lst_of_correct_responses.append(reset_to_0)
-                        # regex_extract=r'[a-zA-Z]+'
-                        # correct_response_lst = re.findall(regex_extract, correct_response)
-                        # print(correct_response_lst)
-                        for idx, x in enumerate(ul_elements):
-                            if idx in lst_of_correct_responses:
-                                x.click()
-                        # data-purpose="next-question-button"
-                        # get last entry of console logs
-
-                    elif x.get('assessment_initial_type') == 'coding-exercise':
-                        logger.info("Not a simple quiz")
-                        logger.info(x.get('assessment_initial_type'))
-                        solution_files = x.get('prompt').get('solution_files')
-                        logger.info(solution_files)
-                    last_entry = self.driver.get_log('performance')[-1]
-                    last_timestamp = last_entry['timestamp']
-                    try:
-                        next_question_btn = "//button[@data-purpose='next-question-button']"
-                        WebDriverWait(self.driver, 10).until(
-                            EC.element_to_be_clickable((By.XPATH, next_question_btn))
-                        ).click()
-                    except TimeoutException:
-                        logger.error(f"TimeoutException - couldn't find next button")
-                        return None
-
-                    filtered_logs = [x for x in self.driver.get_log('performance') if
-                                     x['timestamp'] > last_timestamp]
-                    lst_of_logs = []
-                    for x in filtered_logs:
-                        for k, v in x.items():
-                            if (json_dict := validateJSON(v))[0]:
-                                for x, y in json_dict[1].items():
-                                    if type(y) is dict:
-                                        if y['method'] == 'Network.requestWillBeSent':
-                                            if y['params']['request']['method'] == 'POST':
-                                                lst_of_logs.append(y['params']['request']['url'])
-                    # check with validate_assessment_url function if the url in list lst_of_logs
-                    non_duplicate_lst = list(set(lst_of_logs))
-                    lst_of_assessments_ids = [x for x in non_duplicate_lst if
-                                              self.validate_assessment_url(x, self.settings.domain)]
-
-                    if len(lst_of_assessments_ids) > 1:
-                        logger.error("Something went wrong, it was supposed to be a lst of ids of length=1")
-                        return None
-                    else:
-                        return lst_of_assessments_ids[0]
-
-                except TimeoutException as e:
-                    logger.error("Could not find some of the buttons to quiz")
-                    logger.warning(e)
-
+                except TimeoutException:
+                    logger.warning("couldn't find resume button, already completed quiz")
+                    WebDriverWait(self.driver, 10).until(
+                        EC.element_to_be_clickable((By.XPATH, resume_play_quiz_btn_2))
+                    ).click()
+                try:
+                    locale_xpath_ul_resp = "//ul[@aria-labelledby='question-prompt']"
+                    menu_items = WebDriverWait(self.driver, 10).until(
+                        EC.presence_of_element_located((By.XPATH, locale_xpath_ul_resp))
+                    )
+                    items = self.driver.find_element_by_xpath(locale_xpath_ul_resp)
+                except TimeoutException:
+                    logger.error("TimeoutException, couldn't find quiz menu/answers")
                     return None
+
+                if x.get('assessment_initial_type') == 'simple-quiz':
+                    ul_elements = items.find_elements_by_tag_name('li')
+                    # logger.debug(ul_elements)
+                    correct_response = x.get('correct_response')
+                    print(correct_response)
+                    lst_of_correct_responses = []
+                    for y in correct_response:
+                        ord_of_char = ord(y)
+                        reset_to_0 = ord_of_char - 97
+                        lst_of_correct_responses.append(reset_to_0)
+                    # regex_extract=r'[a-zA-Z]+'
+                    # correct_response_lst = re.findall(regex_extract, correct_response)
+                    # print(correct_response_lst)
+                    for idx, x in enumerate(ul_elements):
+                        if idx in lst_of_correct_responses:
+                            x.click()
+                    # data-purpose="next-question-button"
+                    # get last entry of console logs
+
+                elif x.get('assessment_initial_type') == 'coding-exercise':
+                    logger.info("Not a simple quiz")
+                    logger.info(x.get('assessment_initial_type'))
+                    solution_files = x.get('prompt').get('solution_files')
+                    logger.info(solution_files)
+                last_entry = self.driver.get_log('performance')[-1]
+                last_timestamp = last_entry['timestamp']
+                try:
+                    next_question_btn = "//button[@data-purpose='next-question-button']"
+                    WebDriverWait(self.driver, 10).until(
+                        EC.element_to_be_clickable((By.XPATH, next_question_btn))
+                    ).click()
+                except TimeoutException:
+                    logger.error(f"TimeoutException - couldn't find next button")
+                    return None
+
+                filtered_logs = [x for x in self.driver.get_log('performance') if
+                                 x['timestamp'] > last_timestamp]
+                lst_of_logs = []
+                for x in filtered_logs:
+                    for k, v in x.items():
+                        if (json_dict := validateJSON(v))[0]:
+                            for x, y in json_dict[1].items():
+                                if type(y) is dict:
+                                    if y['method'] == 'Network.requestWillBeSent':
+                                        if y['params']['request']['method'] == 'POST':
+                                            lst_of_logs.append(y['params']['request']['url'])
+                # check with validate_assessment_url function if the url in list lst_of_logs
+                non_duplicate_lst = list(set(lst_of_logs))
+                lst_of_assessments_ids = [x for x in non_duplicate_lst if
+                                          self.validate_assessment_url(x, self.settings.domain)]
+
+                if len(lst_of_assessments_ids) > 1:
+                    logger.error("Something went wrong, it was supposed to be a lst of ids of length=1")
+                    return None
+                else:
+                    return lst_of_assessments_ids[0]
+
+            except TimeoutException as e:
+                logger.error("Could not find some of the buttons to quiz")
+                logger.warning(e)
+
+                return None
+
