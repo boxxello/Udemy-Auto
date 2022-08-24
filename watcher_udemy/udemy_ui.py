@@ -13,8 +13,9 @@ from typing import List, Dict, Optional
 
 import requests
 from regex import regex
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException, StaleElementReferenceException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -118,7 +119,6 @@ class UdemyActionsUI:
         self.ENROLLED_COURSES_URL = (
             f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/?&progress_filter=in-progress&page_size=1400")
 
-
         self.REQUEST_URL_NUM_LECTURES = f"https://{self.DOMAIN}.udemy.com/api-2.0/courses/{{}}/?fields[course]=title,num_lectures,completion_ratio"
         self.REQUEST_URL_NUM_QUIZZES = f"https://{self.DOMAIN}.udemy.com/api-2.0/courses/{{}}/?fields[course]=num_quizzes"
         self.REQUEST_URL_URL = f"https://{self.DOMAIN}.udemy.com/api-2.0/courses/{{}}/?fields[course]=url"
@@ -126,14 +126,15 @@ class UdemyActionsUI:
         self.QUIZ_URL = f"https://{self.DOMAIN}.udemy.com/api-2.0/courses/{{}}/subscriber-curriculum-items/?page_size=1400&fields[lecture]=title,object_index,is_published,sort_order,created,asset,supplementary_assets,is_free&fields[quiz]=title,object_index,is_published,sort_order,type&fields[practice]=title,object_index,is_published,sort_order&fields[chapter]=title,object_index,is_published,sort_order&fields[asset]=title,filename,asset_type,status,time_estimation,is_external&caching_intent=Truefields[course]=title,url,context_info,primary_category,primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,num_subscribers,num_quizzes,num_lectures,completion_ratio"
         self.RESPONSES_URL = f"https://{self.DOMAIN}.udemy.com/api-2.0/quizzes/{{}}/assessments/?version=1&page_size=1400&fields[assessment]=id,assessment_type,prompt,correct_response,section,question_plain,related_lectures"
         self.COMPLETED_QUIZ_IDS = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/359550/progress/?page_size=1400&fields[course]=completed_lecture_ids,completed_quiz_ids,last_seen_page,completed_assignment_ids,first_completion_time"
-        #self.BOH = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/359550/quizzes/95416/?draft=false&fields[quiz]=id,type,title,description,object_index,num_assessments,version,duration,is_draft,pass_percent,changelog"
+        # self.BOH = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/359550/quizzes/95416/?draft=false&fields[quiz]=id,type,title,description,object_index,num_assessments,version,duration,is_draft,pass_percent,changelog"
         self.URL_SEND_RESPONSE = (
             f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{course_id}}/user-attempted-quizzes/{{quiz_id}}/assessment-answers/")
         self.URL_SEND_RESPONSE_MULTIPLE = (
             f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{course_id}}/quizzes/{{quiz_id}}/user-attempted-quizzes/{{assessment_initial_id}}/")
 
         self.LAST_ID_QUIZ = f"https://{self.DOMAIN}.udemy.com/api-2.0/users/me/subscribed-courses/{{course_id}}/quizzes/{{quiz_id}}/user-attempted-quizzes/latest"
-        #https://business-learning.udemy.com/api-2.0/users/me/subscribed-courses/629302/quizzes
+        # https://business-learning.udemy.com/api-2.0/users/me/subscribed-courses/629302/quizzes
+
     def login(self, is_retry=False) -> None:
         """
         Login to your udemy account
@@ -265,13 +266,16 @@ class UdemyActionsUI:
                 self.logged_in = True
                 my_learning = self.driver.find_elements_by_tag_name('span')
                 for x in my_learning:
-                    if x.text.upper() == 'My Learning'.upper():
-                        x.click()
-                        break
+                    if x.text:
+                        if x.text.upper() == 'My Learning'.upper():
+                            x.click()
+                            break
 
                 self.logged_in = True
             except TimeoutException:
                 raise LoginException("Udemy user failed to login")
+            except StaleElementReferenceException as e:
+                pass
 
             # for cookie in self._load_cookies():
             #     self.session.cookies.set(cookie['name'], cookie['value'])
@@ -874,7 +878,6 @@ class UdemyActionsUI:
         else:
             return None
 
-
     def _solve_quiz_req_helper(self, course_id, assessment_lst_already_done, x):
         req_json = self._build_json_complete_part_quiz(x)
         # logger.info(
@@ -936,10 +939,12 @@ class UdemyActionsUI:
                             # logger.info(f"\nc {c}, d {d}\n\n")
                             if c == a and b == d - 1:
                                 if self.solve_last_part_multiple_test(course_id, x):
-                                    logger.info(f"Congratulations, successfully completed quiz {x.get('assessment_initial_id')}")
+                                    logger.info(
+                                        f"Congratulations, successfully completed quiz {x.get('assessment_initial_id')}")
                                 # logger.info(f"Response {self.send_completition_req_quiz_multiple( course_id, assessment_lst_already_done, x)}")
-            elif x.get('assessment_initial_type')== 'multiple-choice' or x.get('assessment_initial_type') == 'simple-quiz':
-                assessment_lst_already_done = self._get_already_done_assessments\
+            elif x.get('assessment_initial_type') == 'multiple-choice' or x.get(
+                    'assessment_initial_type') == 'simple-quiz':
+                assessment_lst_already_done = self._get_already_done_assessments \
                     (course_id, x.get('assessment_initial_id'))
                 if assessment_lst_already_done is None:
                     print(f"Quiz idx: {idx}\n{x} \n\n")
@@ -950,49 +955,69 @@ class UdemyActionsUI:
                     logger.info(f"Else, sending xhr req")
                     logger.info(self._solve_quiz_req_helper(course_id, assessment_lst_already_done, x))
 
-            elif x.get('assessment_type') ==  'coding-problem' or x.get('assessment_initial_type') == 'coding-exercise':
-                assessment_lst_already_done = self._get_already_done_assessments \
-                    (course_id, x.get('assessment_initial_id'))
-                if assessment_lst_already_done is None:
-                    print(f"Quiz idx: {idx}\n{x} \n\n")
-                    self._solve_coding_problem(course_id, x)
+            elif x.get('assessment_type') == 'coding-problem' or x.get('assessment_initial_type') == 'coding-exercise':
+                #
+                #
+                # assessment_lst_already_done = self._get_already_done_assessments \
+                #     (course_id, x.get('assessment_initial_id'))
+                # if assessment_lst_already_done is None:
+                print(f"Quiz idx: {idx}\n{x} \n\n")
+                self._solve_coding_problem(course_id, x)
 
-    def _solve_coding_problem(self, course_id, x:json):
+    def _solve_coding_problem(self, course_id, x: json):
 
         if url_to_use := self._get_real_course_link_from_id(course_id):
             url_of_quiz = self.URL_QUIZ_NOAPI.format(url_no_id=url_to_use, assessment_id=x['assessment_initial_id'])
             self.driver.get(url_of_quiz)
-
-            solution_files=x.get('prompt').get('solution_files')
-            for x in solution_files:
-                filename=x.get('file_name')
-                content=x.get('content')
-                try:
+            try:
+                solution_files = x.get('prompt').get('solution_files')
+                for x in solution_files:
+                    filename = x.get('file_name')
+                    content = x.get('content')
+                    logger.info("Printing content {} for filename {}".format(repr(content), filename))
                     try:
+                        try:
 
-                        WebDriverWait(self.driver, 10).\
-                            until(EC.element_to_be_clickable((By.XPATH, f"//button//div[contains(text(), '{filename}')]")))\
-                            .click()
+                            WebDriverWait(self.driver, 10). \
+                                until(EC.element_to_be_clickable(
+                                (By.XPATH, f"//button//div[contains(text(), '{filename}')]"))) \
+                                .click()
+                        except TimeoutException as e:
+                            logger.info(f"couldn't find filename {e}")
+                            continue
+
+                        div_class_ace_content = "//textarea[@class='ace_text-input']"
+                        element = WebDriverWait(self.driver, 10). \
+                            until(EC.presence_of_element_located((By.XPATH, div_class_ace_content)))
+                        element.send_keys(Keys.CONTROL + "a")
+                        element.send_keys(Keys.DELETE)
+                        self.slow_type(element, content, delay=0.01)
+
+
                     except TimeoutException as e:
-                        logger.info(f"couldn't find filename {e}")
+                        logger.info(f"TimeoutException for {filename}, exception {e}", exc_info=True)
                         continue
+                    except Exception as e:
+                        logger.info(f"Exception for {filename}, exception {e}", exc_info=True)
+                        continue
+                check_button = "//button[@data-purpose='check-button']"
+                WebDriverWait(self.driver, 10). \
+                    until(EC.element_to_be_clickable((By.XPATH, check_button))) \
+                    .click()
+                time.sleep(8)
+                next_question_btn = "//div[@data-purpose='go-to-next']"
+                WebDriverWait(self.driver, 10). \
+                    until(EC.element_to_be_clickable((By.XPATH, next_question_btn))) \
+                    .click()
+            except Exception as e:
+                logger.warning(f"Exception while solving coding exercise {e}", exc_info=True)
 
-                    div_class_ace_content="//div[@class='ace_content']"
-                    WebDriverWait(self.driver, 10).\
-                        until(EC.element_to_be_clickable((By.XPATH, div_class_ace_content)))\
-                        .click()
-                    WebDriverWait(self.driver, 10).\
-                        until(EC.element_to_be_clickable((By.XPATH, div_class_ace_content)))\
-                        .send_keys(content)
-                    next_question_btn="//button[@data-purpose='go-to-next']"
-                    WebDriverWait(self.driver, 10).\
-                        until(EC.element_to_be_clickable((By.XPATH, next_question_btn)))\
-                        .click()
-
-                except TimeoutException as e:
-                    logger.info(f"TimeoutException for {filename}, exception {e}")
-                    continue
-
+    def slow_type(self, element: WebElement, text: str, delay: float = 0.1):
+        """Send a text to an element one character at a time with a delay."""
+        text_to_split = text.split('\n')
+        for x in text_to_split:
+            element.send_keys(x + "\n")
+            time.sleep(delay)
 
     def solve_last_part_multiple_test(self, course_id, x):
         if url_to_use := self._get_real_course_link_from_id(course_id):
@@ -1010,14 +1035,14 @@ class UdemyActionsUI:
             finally:
                 stop_quiz = "//button[@data-purpose='stop']"
                 try:
-                    WebDriverWait(self.driver, 10)\
+                    WebDriverWait(self.driver, 10) \
                         .until(EC.presence_of_element_located((By.XPATH, stop_quiz))).click()
                 except TimeoutException:
                     logger.warning("Quiz has already finished, no need to finish.")
                 else:
                     confirm_stop = "//button[@data-purpose='submit-confirm-modal']"
                     try:
-                        WebDriverWait(self.driver, 10)\
+                        WebDriverWait(self.driver, 10) \
                             .until(EC.presence_of_element_located((By.XPATH, confirm_stop))).click()
                     except TimeoutException:
                         logger.warning("Something went wrong while finishing the quiz.")
@@ -1047,7 +1072,7 @@ class UdemyActionsUI:
         return response.status_code, response.text
 
     def _solve_first_quiz_with_driver_test(self, course_id, x):
-        url_to_use=self._get_real_course_link_from_id(course_id)
+        url_to_use = self._get_real_course_link_from_id(course_id)
         if url_to_use:
             url_of_quiz = self.URL_QUIZ_NOAPI.format(url_no_id=url_to_use,
                                                      assessment_id=x['assessment_initial_id'])
@@ -1140,4 +1165,3 @@ class UdemyActionsUI:
                 logger.warning(e)
 
                 return None
-
