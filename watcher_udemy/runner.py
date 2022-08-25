@@ -94,8 +94,8 @@ def _watch_courses_ui(
 
                         logger.info(f"Enrolled/Already enrolled in {cs_link}, trying to get it to finish")
                         course_details = udemy_actions._get_course_details(course_id)
-                        course_details_complt = course_details['completion_ratio']
-                        course_details_has_quizzes = course_details['num_quizzes']
+                        course_details_complt = course_details.get('completion_ratio')
+                        course_details_has_quizzes = course_details.get('num_quizzes')
                         if course_details_complt != 100:
                             if str(course_details_has_quizzes) == '0':
                                 logger.info("It has got NO quizzes in it")
