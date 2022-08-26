@@ -68,12 +68,16 @@ def _watch_courses_ui(
         return
     else:
 
-        udemy_course_progress_id = udemy_actions._get_already_rolled_courses()
+        # udemy_course_progress_id = udemy_actions._get_already_rolled_courses()
         udemy_course_links = []
-        for x in udemy_course_progress_id:
-            udemy_course_links.append(udemy_actions.URL_TO_COURSE_ID.format(x))
-        # udemy_course_links = loop.run_until_complete(scrapers.run())
+        # for x in udemy_course_progress_id:
+        #     udemy_course_links.append(udemy_actions.URL_TO_COURSE_ID.format(x))
+
+        logger.debug("OLEE")
+        new_links = loop.run_until_complete(scrapers.run())
+        logger.debug("NEW LINKS: {}".format(new_links))
         logger.info(f"LINKS FROM PAGE {udemy_course_links}")
+        udemy_course_links.extend(new_links)
 
     while True:
         if udemy_course_links:

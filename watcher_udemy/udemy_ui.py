@@ -265,14 +265,7 @@ class UdemyActionsUI:
                 )
                 logger.info("Logged in to udemy, trying to retrieve button")
                 self.logged_in = True
-                my_learning = self.driver.find_elements(By.TAG_NAME,'span')
-                for x in my_learning:
-                    if x.text:
-                        if x.text.upper() == 'My Learning'.upper():
-                            x.click()
-                            break
 
-                self.logged_in = True
             except TimeoutException:
                 raise LoginException("Udemy user failed to login")
             except StaleElementReferenceException as e:

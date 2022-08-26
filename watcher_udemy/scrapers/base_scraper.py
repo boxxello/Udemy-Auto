@@ -72,12 +72,12 @@ class BaseScraper(ABC):
             try:
                 response = await func(self)
             except Exception as e:
-                logger.error(f"Error while running {self.scraper_name} scraper: {e}")
+                logger.error(f"Error while running scraper: {e}", exc_info=True)
                 self.is_complete()
                 return []
             end_time = datetime.datetime.utcnow()
             logger.info(
-                f"Got {len(response)} links from {self.DOMAIN} in {(end_time - start_time).total_seconds():.2f} seconds"
+                f"Function get_links finished in {(end_time - start_time).total_seconds():.2f} seconds"
             )
             return response
 
@@ -118,6 +118,7 @@ class BaseScraper(ABC):
         url_pattern_course=rf"https:\/\/(www\.)?{domain}\.udemy\.com\/course-dashboard-redirect\/\?course_id=\d+.*$"
         #https://regex101.com/r/KHpL7F/1
         matching = re.match(url_pattern_grp_crs, url)
+
         if matching is not None:
             matching = matching.group()
             return 0, matching

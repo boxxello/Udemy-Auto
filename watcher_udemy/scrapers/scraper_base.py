@@ -36,7 +36,7 @@ class UdemyScraper(BaseScraper):
 
         :return: List of udemy course links
         """
-        links = await self.get_links(self.DOMAIN_BUSINESS_FULL)
+        links = await self.get_links(self.settings.domain)
         logger.info(
             f"Page: {self.current_page} of {self.last_page} scraped from business domain {self.settings.domain}"
         )
@@ -49,12 +49,12 @@ class UdemyScraper(BaseScraper):
 
         :return: List of udemy course urls
         """
-
+        logger.debug("Arrivo a get_links")
         self.current_page += 1
         # /home/my-courses/learning/?p=1
-        coupons_data = await get(f"https://{domain}.udemy.com/home/my-courses/learning/?p={self.current_page}", driver=self.driver)
-        soup = BeautifulSoup(coupons_data, "html.parser")
-        # print(coupons_data)
+        course_linkss = await get(f"https://{domain}.udemy.com/home/my-courses/learning/?p={self.current_page}", driver=self.driver)
+        logger.debug("Arrivo anche dopo il get di get_links")
+        soup = BeautifulSoup(course_linkss, "html.parser")
         try:
             div_containing_rel_links = WebDriverWait(self.driver, 20).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, ".my-courses__course-card-grid"))
@@ -68,8 +68,8 @@ class UdemyScraper(BaseScraper):
             soup = self.driver.find_element(By.XPATH,"/html/body")
             all_links = BeautifulSoup(soup.get_attribute("innerHTML"), "html.parser")
             all_udemy_links = self.get_relevant_links(all_links)
-            for counter, course in enumerate(all_udemy_links):
-                logger.debug(f"All_links Received Link {counter + 1} : {course}")
+            # for counter, course in enumerate(all_udemy_links):
+            #     logger.debug(f"All_links Received Link {counter + 1} : {course}")
 
         except TimeoutException:
             raise TimeoutException("TimeoutException: Unable to find the main content element")
@@ -79,11 +79,6 @@ class UdemyScraper(BaseScraper):
             logger.debug(f"Received grp Link {counter + 1} : {course}")
         for counter, course in enumerate(links_crs):
             logger.debug(f"Received crs Link {counter + 1} : {course}")
-        # if links:
-        #     new_lins = await self.gather_udemy_course_links(links)
-
-        # for counter, course in enumerate(links):
-        #     logger.debug(f"Received Link {counter + 1} : {course}")
 
         self.last_page = self._get_last_page()
 
@@ -108,7 +103,8 @@ class UdemyScraper(BaseScraper):
         """
         list_of_grp = []
         list_of_crs = []
-        for tuple in await asyncio.gather(*map(self.validate_courses_url, courses, self.settings.domain)):
+
+        for tuple in await asyncio.gather(*map(lambda course: self.validate_courses_url(course, self.settings.domain), courses)):
             if tuple[1] is not None :
                 if tuple[0] == 0:
                     list_of_grp.append(tuple[1])
