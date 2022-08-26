@@ -88,7 +88,7 @@ class BaseScraper(ABC):
         # https://regex101.com/r/yl2S3g/1
 
         url_pattern_course=rf"https:\/\/(www\.)?{domain}\.udemy\.com\/course-dashboard-redirect\/\?course_id=\d+.*$"
-        url_pattern_course2 = rf"^https:\/\/(www\.)?ibm-learning\.udemy\.com\/course\/.*$"
+        url_pattern_course2 = rf"^https:\/\/(www\.)?{domain}\.udemy\.com\/course\/.*$"
         #https://regex101.com/r/ChoWhS/1
         #https://regex101.com/r/KHpL7F/1
         matching = re.match(url_pattern_grp_crs, url)
