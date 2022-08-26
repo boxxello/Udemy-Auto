@@ -997,7 +997,9 @@ class UdemyActionsUI:
                 WebDriverWait(self.driver, 10). \
                     until(EC.element_to_be_clickable((By.XPATH, check_button))) \
                     .click()
-                time.sleep(8)
+                feedback_div= "//div[@data-purpose='feedback-title']"
+                WebDriverWait(self.driver, 10). \
+                    until(EC.presence_of_element_located((By.XPATH, feedback_div)))
                 next_question_btn = "//div[@data-purpose='go-to-next']"
                 WebDriverWait(self.driver, 10). \
                     until(EC.element_to_be_clickable((By.XPATH, next_question_btn))) \
@@ -1091,8 +1093,13 @@ class UdemyActionsUI:
                 except TimeoutException:
                     logger.error("TimeoutException, couldn't find quiz menu/answers")
                     return None
-
-                if x.get('assessment_initial_type') == 'simple-quiz':
+                if x.get('assessment_initial_type') == 'coding-exercise':
+                    logger.info("Not a simple quiz")
+                    logger.info(x.get('assessment_initial_type'))
+                    solution_files = x.get('prompt').get('solution_files')
+                    logger.info(solution_files)
+                else:
+                    #x.get('assessment_initial_type') == 'simple-quiz':
                     ul_elements = items.find_elements(By.TAG_NAME,'li')
                     # logger.debug(ul_elements)
                     correct_response = x.get('correct_response')
@@ -1111,11 +1118,7 @@ class UdemyActionsUI:
                     # data-purpose="next-question-button"
                     # get last entry of console logs
 
-                elif x.get('assessment_initial_type') == 'coding-exercise':
-                    logger.info("Not a simple quiz")
-                    logger.info(x.get('assessment_initial_type'))
-                    solution_files = x.get('prompt').get('solution_files')
-                    logger.info(solution_files)
+
                 last_entry = self.driver.get_log('performance')[-1]
                 last_timestamp = last_entry['timestamp']
                 try:
