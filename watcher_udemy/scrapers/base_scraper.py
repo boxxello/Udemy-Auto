@@ -20,9 +20,6 @@ class BaseScraper(ABC):
         self.driver = driver
         self._state = None
         self.scraper_name = None
-        self.max_pages = None
-        self.last_page = None
-        self.current_page = 0
 
     @abstractmethod
     async def run(self):
@@ -83,31 +80,6 @@ class BaseScraper(ABC):
 
         return wrapper
 
-    def max_pages_reached(self) -> bool:
-        """
-        Returns boolean of whether or not we should continue checking tutorialbar.com
-
-        :return:
-        """
-
-        should_run = True
-
-        if self.max_pages is not None:
-            should_run = self.max_pages > self.current_page
-
-            if not should_run:
-                logger.info(
-                    f"Stopping loop. We have reached max number of pages to scrape: {self.max_pages}"
-                )
-                self.set_state_complete()
-
-        if self.last_page == self.current_page:
-            logger.info(
-                f"Stopping loop. We have reached the last page to scrape: {self.last_page}"
-            )
-            self.set_state_complete()
-
-        return should_run
 
     @staticmethod
     async def  validate_courses_url(url, domain)->tuple:
@@ -116,6 +88,8 @@ class BaseScraper(ABC):
         # https://regex101.com/r/yl2S3g/1
 
         url_pattern_course=rf"https:\/\/(www\.)?{domain}\.udemy\.com\/course-dashboard-redirect\/\?course_id=\d+.*$"
+        url_pattern_course2 = rf"^https:\/\/(www\.)?ibm-learning\.udemy\.com\/course\/.*$"
+        #https://regex101.com/r/ChoWhS/1
         #https://regex101.com/r/KHpL7F/1
         matching = re.match(url_pattern_grp_crs, url)
 
@@ -123,7 +97,7 @@ class BaseScraper(ABC):
             matching = matching.group()
             return 0, matching
         else:
-            matching = re.match(url_pattern_course, url)
+            matching = re.match(url_pattern_course, url) or re.match(url_pattern_course2, url)
             if matching is not None:
                 matching = matching.group()
                 return 1, matching

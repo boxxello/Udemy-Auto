@@ -30,7 +30,6 @@ def enable_debug_logging() -> None:
 def run(
         browser: str,
         udemy_scraper_enabled: bool,
-        max_pages: Union[int, None],
         delete_settings: bool,
         delete_cookie: bool,
         scrape_urls_from_file: bool,
@@ -41,7 +40,7 @@ def run(
 
     :param str browser: Name of the browser we want to create a driver for
     :param bool udemy_scraper_enabled: Boolean signifying if udemy scraper scraper should run
-    :param int max_pages: Max pages to scrape from sites (if pagination exists)
+
     :param bool delete_settings: Determines if we should delete old settings file
     :param bool delete_cookie: Determines if we should delete the cookie file
     :return:
@@ -57,7 +56,7 @@ def run(
                         dm.driver,
                         settings,
                         udemy_scraper_enabled,
-                        max_pages,
+
                         scrape_urls_from_file,
                         filename
                     )
@@ -70,7 +69,7 @@ def run(
                     dm.driver,
                     settings,
                     udemy_scraper_enabled,
-                    max_pages,
+
                     scrape_urls_from_file,
                     filename
                 )
@@ -101,13 +100,6 @@ def parse_args() -> Namespace:
         action="store_true",
         default=True,
         help="Run base udemy scraper",
-    )
-
-    parser.add_argument(
-        "--max-pages",
-        type=int,
-        default=5,
-        help=f"Max pages to scrape from sites (if pagination exists) (Default is 5)",
     )
 
     parser.add_argument(
@@ -157,8 +149,6 @@ def main():
         run(
             args.browser,
             args.udemybase,
-
-            args.max_pages,
             args.delete_settings,
             args.delete_cookie,
             args.scrape_from_file,

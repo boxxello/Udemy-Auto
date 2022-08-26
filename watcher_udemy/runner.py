@@ -151,7 +151,6 @@ def watch_courses_ui(
         driver,
         settings: Settings,
         udemy_scraper_enabled: bool,
-        max_pages: Union[int, None],
         scrape_urls_from_file: bool,
         filename: str
 ) -> None:
@@ -161,14 +160,14 @@ def watch_courses_ui(
     :param WebDriver driver: WebDriver to use to complete enrolment
     :param Settings settings: Core settings used for Udemy
     :param bool udemy_scraper_enabled: Boolean signifying if udemy scraper scraper should run
-    :param int max_pages: Max pages to scrape from sites (if pagination exists)
+
     :return:
     """
 
     try:
         scrapers = ScraperManager(
             udemy_scraper_enabled,
-            max_pages, driver, settings
+            driver, settings
         )
         _watch_courses_ui(driver, settings, scrapers, scrape_urls_from_file, filename)
     except Exception as e:
