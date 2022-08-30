@@ -751,23 +751,28 @@ class UdemyActionsUI:
 
                 ul_elements = items.find_elements(By.TAG_NAME,'li')
                 # logger.debug(ul_elements)
+                print(ul_elements)
                 correct_response = x.get('correct_response')
                 print(correct_response)
                 lst_of_correct_responses = []
                 for y in correct_response:
+                    print(y)
                     ord_of_char = ord(y)
                     reset_to_0 = ord_of_char - 97
                     lst_of_correct_responses.append(reset_to_0)
+                logger.debug("arrivo dopo il for")
                 # regex_extract=r'[a-zA-Z]+'
                 # correct_response_lst = re.findall(regex_extract, correct_response)
                 # print(correct_response_lst)
                 for idx, x in enumerate(ul_elements):
                     if idx in lst_of_correct_responses:
                         x.click()
+                logger.debug("Arrivo dopo il click dei vari elementi")
                 # data-purpose="next-question-button"
                 # get last entry of console logs
                 last_entry = self.driver.get_log('performance')[-1]
                 last_timestamp = last_entry['timestamp']
+                logger.debug("Prendo ultimo timestamp")
                 try:
                     next_question_btn = "//button[@data-purpose='next-question-button']"
                     WebDriverWait(self.driver, 10).until(
@@ -776,7 +781,7 @@ class UdemyActionsUI:
                 except TimeoutException:
                     logger.error(f"TimeoutException - couldn't find next button")
                     return None
-
+                logger.debug("Arrivo dopo il click del next button")
                 filtered_logs = [x for x in self.driver.get_log('performance') if x['timestamp'] > last_timestamp]
                 lst_of_logs = []
                 for x in filtered_logs:
@@ -791,7 +796,7 @@ class UdemyActionsUI:
                 non_duplicate_lst = list(set(lst_of_logs))
                 lst_of_assessments_ids = [x for x in non_duplicate_lst if
                                           self.validate_assessment_url(x, self.settings.domain)]
-
+                logger.debug("arrivo dopo il set")
                 if len(lst_of_assessments_ids) > 1:
                     logger.error("Something went wrong, it was supposed to be a lst of ids of length=1")
                     return None
@@ -910,6 +915,7 @@ class UdemyActionsUI:
         lst_of_dicts = {}
 
         for idx, x in enumerate(assessment_lst):
+
             if x.get('assessment_initial_type') == 'practice-test':
                 assessment_lst_already_done = self._get_already_done_assessments(course_id,
                                                                                  x.get('assessment_initial_id'))
@@ -1081,9 +1087,13 @@ class UdemyActionsUI:
 
                 except TimeoutException:
                     logger.warning("couldn't find resume button, already completed quiz")
-                    WebDriverWait(self.driver, 10).until(
-                        EC.element_to_be_clickable((By.XPATH, resume_play_quiz_btn_2))
-                    ).click()
+                    try:
+                        WebDriverWait(self.driver, 10).until(
+                            EC.element_to_be_clickable((By.XPATH, resume_play_quiz_btn_2))
+                        ).click()
+                    except TimeoutException:
+                        logger.warning("couldn't find resume button2, already completed quiz")
+                        return None
                 try:
                     locale_xpath_ul_resp = "//ul[@aria-labelledby='question-prompt']"
                     menu_items = WebDriverWait(self.driver, 10).until(
