@@ -718,110 +718,6 @@ class UdemyActionsUI:
             return url_to_use if (
                 url_to_use := self.validate_basic_quiz_url(current_url, self.settings.domain)) else None
 
-    def _solve_first_quiz_with_driver(self, course_id: int, x: json):
-
-        if url_to_use := self._get_real_course_link_from_id(course_id):
-            url_of_quiz = self.URL_QUIZ_NOAPI.format(url_no_id=url_to_use, assessment_id=x['assessment_initial_id'])
-            self.driver.get(url_of_quiz)
-            logger.info(f"Found quiz url {url_of_quiz}")
-            try:
-                resume_play_quiz_btn = "//button[@data-purpose='start-or-resume-quiz']"
-                resume_play_quiz_btn_2 = "//button[@data-purpose='start-quiz']"
-
-                try:
-
-                    WebDriverWait(self.driver, 10).until(
-                        EC.element_to_be_clickable((By.XPATH, resume_play_quiz_btn))
-                    ).click()
-
-                except TimeoutException:
-                    logger.warning("couldn't find resume button, already completed quiz")
-                    WebDriverWait(self.driver, 10).until(
-                        EC.element_to_be_clickable((By.XPATH, resume_play_quiz_btn_2))
-                    ).click()
-                try:
-                    locale_xpath_ul_resp = "//ul[@aria-labelledby='question-prompt']"
-                    menu_items = WebDriverWait(self.driver, 10).until(
-                        EC.presence_of_element_located((By.XPATH, locale_xpath_ul_resp))
-                    )
-                    items = self.driver.find_element(By.XPATH,locale_xpath_ul_resp)
-                except TimeoutException:
-                    logger.error("TimeoutException, couldn't find quiz menu/answers")
-                    return None
-
-                ul_elements = items.find_elements(By.TAG_NAME,'li')
-                # logger.debug(ul_elements)
-                correct_response = x.get('correct_response')
-                print(correct_response)
-                lst_of_correct_responses = []
-                for y in correct_response:
-                    ord_of_char = ord(y)
-                    reset_to_0 = ord_of_char - 97
-                    lst_of_correct_responses.append(reset_to_0)
-                # regex_extract=r'[a-zA-Z]+'
-                # correct_response_lst = re.findall(regex_extract, correct_response)
-                # print(correct_response_lst)
-                for idx, x in enumerate(ul_elements):
-                    if idx in lst_of_correct_responses:
-                        x.click()
-                # data-purpose="next-question-button"
-                # get last entry of console logs
-                last_entry = self.driver.get_log('performance')[-1]
-                last_timestamp = last_entry['timestamp']
-                try:
-                    next_question_btn = "//button[@data-purpose='next-question-button']"
-                    WebDriverWait(self.driver, 10).until(
-                        EC.element_to_be_clickable((By.XPATH, next_question_btn))
-                    ).click()
-                except TimeoutException:
-                    logger.error(f"TimeoutException - couldn't find next button")
-                    return None
-
-                filtered_logs = [x for x in self.driver.get_log('performance') if x['timestamp'] > last_timestamp]
-                lst_of_logs = []
-                for x in filtered_logs:
-                    for k, v in x.items():
-                        if (json_dict := validateJSON(v))[0]:
-                            for x, y in json_dict[1].items():
-                                if type(y) is dict:
-                                    if y['method'] == 'Network.requestWillBeSent':
-                                        if y['params']['request']['method'] == 'POST':
-                                            lst_of_logs.append(y['params']['request']['url'])
-                # check with validate_assessment_url function if the url in list lst_of_logs
-                non_duplicate_lst = list(set(lst_of_logs))
-                lst_of_assessments_ids = [x for x in non_duplicate_lst if
-                                          self.validate_assessment_url(x, self.settings.domain)]
-
-                if len(lst_of_assessments_ids) > 1:
-                    logger.error("Something went wrong, it was supposed to be a lst of ids of length=1")
-                    return None
-                else:
-                    return lst_of_assessments_ids[0]
-
-            except TimeoutException as e:
-                logger.error("Could not find some of the buttons to quiz")
-                logger.warning(e)
-
-                return None
-
-    # oneliner up
-    # def _get_log(self, _last_timestamp):
-    #     last_timestamp = _last_timestamp
-    #     entries = self.driver.get_log("performance")
-    #     filtered = []
-    #
-    #     for entry in entries:
-    #         # check the logged timestamp against the
-    #         # stored timestamp
-    #         if entry["timestamp"] > _last_timestamp:
-    #             filtered.append(entry)
-    #
-    #             # save the last timestamp only if newer
-    #             # in this set of logs
-    #             if entry["timestamp"] > last_timestamp:
-    #                 last_timestamp = entry["timestamp"]
-    #
-    #     return filtered
     @staticmethod
     def validate_assessment_url(url, domain) -> Optional[str]:
         """
@@ -1123,7 +1019,14 @@ class UdemyActionsUI:
                     ).click()
                 except TimeoutException:
                     logger.error(f"TimeoutException - couldn't find next button")
-                    return None
+                    try:
+                        next_question_btn_2 = "//button[@data-purpose='go-to-next-question']"
+                        WebDriverWait(self.driver, 10).until(
+                            EC.element_to_be_clickable((By.XPATH, next_question_btn_2))
+                        ).click()
+                    except TimeoutException:
+                        logger.error(f"TimeoutException - couldn't find next button2")
+                        return None
 
                 filtered_logs = [x for x in self.driver.get_log('performance') if
                                  x['timestamp'] > last_timestamp]
@@ -1152,3 +1055,22 @@ class UdemyActionsUI:
                 logger.warning(e)
 
                 return None
+
+    # oneliner up
+    # def _get_log(self, _last_timestamp):
+    #     last_timestamp = _last_timestamp
+    #     entries = self.driver.get_log("performance")
+    #     filtered = []
+    #
+    #     for entry in entries:
+    #         # check the logged timestamp against the
+    #         # stored timestamp
+    #         if entry["timestamp"] > _last_timestamp:
+    #             filtered.append(entry)
+    #
+    #             # save the last timestamp only if newer
+    #             # in this set of logs
+    #             if entry["timestamp"] > last_timestamp:
+    #                 last_timestamp = entry["timestamp"]
+    #
+    #     return filtered
