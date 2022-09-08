@@ -24,12 +24,10 @@ def enable_debug_logging() -> None:
     logger.info(f"Enabled debug logging")
 
 
-
-
-
 def run(
         browser: str,
         udemy_scraper_enabled: bool,
+        get_random_links: bool,
         delete_settings: bool,
         delete_cookie: bool,
         scrape_urls_from_file: bool,
@@ -56,7 +54,7 @@ def run(
                         dm.driver,
                         settings,
                         udemy_scraper_enabled,
-
+                        get_random_links,
                         scrape_urls_from_file,
                         filename
                     )
@@ -69,7 +67,7 @@ def run(
                     dm.driver,
                     settings,
                     udemy_scraper_enabled,
-
+                    get_random_links,
                     scrape_urls_from_file,
                     filename
                 )
@@ -77,7 +75,6 @@ def run(
             logger.error("EXITING DUE TO NO SCRAPER ENABLED, "
                          "FUTURE IMPLEMENTATION INCOMING SOON")
             exit(-3)
-
 
 
 def parse_args() -> Namespace:
@@ -101,16 +98,21 @@ def parse_args() -> Namespace:
         default=True,
         help="Run base udemy scraper",
     )
-
     parser.add_argument(
-        "--delete-settings",
+        "--get_random_links",
+        action="store_true",
+        default=False,
+        help="Complete the current course in progress",
+    )
+    parser.add_argument(
+        "--delete_settings",
         action="store_true",
         default=False,
         help="Delete any existing settings file",
     )
 
     parser.add_argument(
-        "--delete-cookie",
+        "--delete_cookie",
         action="store_true",
         default=False,
         help="Delete existing cookie file",
@@ -149,6 +151,7 @@ def main():
         run(
             args.browser,
             args.udemybase,
+            args.get_random_links,
             args.delete_settings,
             args.delete_cookie,
             args.scrape_from_file,

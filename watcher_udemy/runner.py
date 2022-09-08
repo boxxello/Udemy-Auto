@@ -25,6 +25,7 @@ def _watch_courses_ui(
         driver,
         settings: Settings,
         scrapers: ScraperManager,
+        get_random_links: bool,
         scrape_urls_from_file: bool,
         filename: str,
 ) -> None:
@@ -68,16 +69,17 @@ def _watch_courses_ui(
         return
     else:
 
-        # udemy_course_progress_id = udemy_actions._get_already_rolled_courses()
+        udemy_course_progress_id = udemy_actions._get_already_rolled_courses()
         udemy_course_links = []
-        # for x in udemy_course_progress_id:
-        #     udemy_course_links.append(udemy_actions.URL_TO_COURSE_ID.format(x))
+        for x in udemy_course_progress_id:
+            udemy_course_links.append(udemy_actions.URL_TO_COURSE_ID.format(x))
 
         logger.debug("OLEE")
-        new_links = loop.run_until_complete(scrapers.run())
-        logger.debug("NEW LINKS: {}".format(new_links))
-        logger.info(f"LINKS FROM PAGE {udemy_course_links}")
-        udemy_course_links.extend(new_links)
+        if get_random_links:
+            new_links = loop.run_until_complete(scrapers.run())
+            logger.debug("NEW LINKS: {}".format(new_links))
+            logger.info(f"LINKS FROM PAGE {udemy_course_links}")
+            udemy_course_links.extend(new_links)
 
     while True:
         if udemy_course_links:
@@ -151,6 +153,7 @@ def watch_courses_ui(
         driver,
         settings: Settings,
         udemy_scraper_enabled: bool,
+        get_random_links: bool,
         scrape_urls_from_file: bool,
         filename: str
 ) -> None:
@@ -169,7 +172,7 @@ def watch_courses_ui(
             udemy_scraper_enabled,
             driver, settings
         )
-        _watch_courses_ui(driver, settings, scrapers, scrape_urls_from_file, filename)
+        _watch_courses_ui(driver, settings, scrapers, get_random_links, scrape_urls_from_file, filename)
     except Exception as e:
         logger.error(f"Exception in redeem courses: {e}", exc_info=True)
     finally:
