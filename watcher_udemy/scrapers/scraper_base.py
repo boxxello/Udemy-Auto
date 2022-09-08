@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from typing import List, Any, Coroutine
 
 from bs4 import BeautifulSoup
@@ -21,13 +22,12 @@ class UdemyScraper(BaseScraper):
     """
 
 
-    def __init__(self, enabled, driver,settings, max_pages=None):
+    def __init__(self, enabled, driver,settings):
         super().__init__(driver,settings)
         self.DOMAIN_BUSINESS_FULL=f"https://{self.settings.domain}.udemy.com"
         self.scraper_name = "udemy_watcher.solver"
         if not enabled:
             self.set_state_disabled()
-        self.max_pages = max_pages
 
     @BaseScraper.time_run
     async def run(self) -> List[str]:
@@ -36,11 +36,7 @@ class UdemyScraper(BaseScraper):
 
         :return: List of udemy course links
         """
-        links = await self.get_links(self.DOMAIN_BUSINESS_FULL)
-        logger.info(
-            f"Page: {self.current_page} of {self.last_page} scraped from business domain {self.settings.domain}"
-        )
-        self.max_pages_reached()
+        links = await self.get_links(self.settings.domain)
         return links[1]
 
     async def get_links(self, domain) -> tuple[List[str], List[str]]:
@@ -49,16 +45,19 @@ class UdemyScraper(BaseScraper):
 
         :return: List of udemy course urls
         """
-
-        self.current_page += 1
+        logger.debug("Arrivo a get_links")
         # /home/my-courses/learning/?p=1
-        coupons_data = await get(f"https://{domain}.udemy.com/home/my-courses/learning/?p={self.current_page}", driver=self.driver)
-        soup = BeautifulSoup(coupons_data, "html.parser")
-        # print(coupons_data)
+        course_linkss = await get(f"https://{domain}.udemy.com/organization/home/", driver=self.driver)
+        logger.debug("Arrivo anche dopo il get di get_links")
+        soup = BeautifulSoup(course_linkss, "html.parser")
         try:
-            div_containing_rel_links = WebDriverWait(self.driver, 20).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, ".my-courses__course-card-grid"))
-            )
+            # button_of_any_container="//div[@data-purpose='container']"
+            WebDriverWait(self.driver, 10). \
+                until(lambda driver: driver.execute_script('return document.readyState') == 'complete')
+            time.sleep(10)
+            # div_containing_rel_links = WebDriverWait(self.driver, 20).until(
+            #     EC.presence_of_element_located((By.XPATH, button_of_any_container))
+            # )
             logger.info("Found the courses element")
             # rel_links=BeautifulSoup(div_containing_rel_links.get_attribute("innerHTML"), "html.parser")
             # udemy_links = self.get_relevant_links(rel_links)
@@ -79,13 +78,6 @@ class UdemyScraper(BaseScraper):
             logger.debug(f"Received grp Link {counter + 1} : {course}")
         for counter, course in enumerate(links_crs):
             logger.debug(f"Received crs Link {counter + 1} : {course}")
-        # if links:
-        #     new_lins = await self.gather_udemy_course_links(links)
-
-        # for counter, course in enumerate(links):
-        #     logger.debug(f"Received Link {counter + 1} : {course}")
-
-        self.last_page = self._get_last_page()
 
         return links_grp, links_crs
 
@@ -108,7 +100,8 @@ class UdemyScraper(BaseScraper):
         """
         list_of_grp = []
         list_of_crs = []
-        for tuple in await asyncio.gather(*map(self.validate_courses_url, courses, self.settings.domain)):
+
+        for tuple in await asyncio.gather(*map(lambda course: self.validate_courses_url(course, self.settings.domain), courses)):
             if tuple[1] is not None :
                 if tuple[0] == 0:
                     list_of_grp.append(tuple[1])
@@ -145,31 +138,4 @@ class UdemyScraper(BaseScraper):
             if link is not None
         ]
 
-    def _get_last_page(self) -> int:
-        """
-        Extract the last page number to scrape
 
-        :param self:
-        :return: The last page number to scrape
-        """
-        # find all the pagination numbers
-        max_page = 0
-        try:
-            page_elements = WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, ".pagination--pagination--Xzx5q"))
-            )
-            logger.info("Found the pagination element")
-        except TimeoutException:
-            raise TimeoutException("TimeoutException: Unable to find the pagination element")
-        soup = BeautifulSoup(page_elements.get_attribute("innerHTML"), "html.parser")
-        all_the_pages = soup.find_all("a")
-        for x in all_the_pages:
-            # print(f"printing text inside the <a> tags pag: {x.text}")
-            try:
-                if int(x.text) > max_page:
-                    max_page = int(x.text)
-            except ValueError:
-                # logger.error("ValueError: Unable to convert the text to int")
-                pass
-
-        return max_page

@@ -25,6 +25,7 @@ def _watch_courses_ui(
         driver,
         settings: Settings,
         scrapers: ScraperManager,
+        get_random_links: bool,
         scrape_urls_from_file: bool,
         filename: str,
 ) -> None:
@@ -72,8 +73,13 @@ def _watch_courses_ui(
         udemy_course_links = []
         for x in udemy_course_progress_id:
             udemy_course_links.append(udemy_actions.URL_TO_COURSE_ID.format(x))
-        # udemy_course_links = loop.run_until_complete(scrapers.run())
-        logger.info(f"LINKS FROM PAGE {udemy_course_links}")
+
+        logger.debug("OLEE")
+        if get_random_links:
+            new_links = loop.run_until_complete(scrapers.run())
+            logger.debug("NEW LINKS: {}".format(new_links))
+            logger.info(f"LINKS FROM PAGE {udemy_course_links}")
+            udemy_course_links.extend(new_links)
 
     while True:
         if udemy_course_links:
@@ -147,7 +153,7 @@ def watch_courses_ui(
         driver,
         settings: Settings,
         udemy_scraper_enabled: bool,
-        max_pages: Union[int, None],
+        get_random_links: bool,
         scrape_urls_from_file: bool,
         filename: str
 ) -> None:
@@ -157,16 +163,16 @@ def watch_courses_ui(
     :param WebDriver driver: WebDriver to use to complete enrolment
     :param Settings settings: Core settings used for Udemy
     :param bool udemy_scraper_enabled: Boolean signifying if udemy scraper scraper should run
-    :param int max_pages: Max pages to scrape from sites (if pagination exists)
+
     :return:
     """
 
     try:
         scrapers = ScraperManager(
             udemy_scraper_enabled,
-            max_pages, driver, settings
+            driver, settings
         )
-        _watch_courses_ui(driver, settings, scrapers, scrape_urls_from_file, filename)
+        _watch_courses_ui(driver, settings, scrapers, get_random_links, scrape_urls_from_file, filename)
     except Exception as e:
         logger.error(f"Exception in redeem courses: {e}", exc_info=True)
     finally:

@@ -265,14 +265,7 @@ class UdemyActionsUI:
                 )
                 logger.info("Logged in to udemy, trying to retrieve button")
                 self.logged_in = True
-                my_learning = self.driver.find_elements(By.TAG_NAME,'span')
-                for x in my_learning:
-                    if x.text:
-                        if x.text.upper() == 'My Learning'.upper():
-                            x.click()
-                            break
 
-                self.logged_in = True
             except TimeoutException:
                 raise LoginException("Udemy user failed to login")
             except StaleElementReferenceException as e:
@@ -725,110 +718,6 @@ class UdemyActionsUI:
             return url_to_use if (
                 url_to_use := self.validate_basic_quiz_url(current_url, self.settings.domain)) else None
 
-    def _solve_first_quiz_with_driver(self, course_id: int, x: json):
-
-        if url_to_use := self._get_real_course_link_from_id(course_id):
-            url_of_quiz = self.URL_QUIZ_NOAPI.format(url_no_id=url_to_use, assessment_id=x['assessment_initial_id'])
-            self.driver.get(url_of_quiz)
-            logger.info(f"Found quiz url {url_of_quiz}")
-            try:
-                resume_play_quiz_btn = "//button[@data-purpose='start-or-resume-quiz']"
-                resume_play_quiz_btn_2 = "//button[@data-purpose='start-quiz']"
-
-                try:
-
-                    WebDriverWait(self.driver, 10).until(
-                        EC.element_to_be_clickable((By.XPATH, resume_play_quiz_btn))
-                    ).click()
-
-                except TimeoutException:
-                    logger.warning("couldn't find resume button, already completed quiz")
-                    WebDriverWait(self.driver, 10).until(
-                        EC.element_to_be_clickable((By.XPATH, resume_play_quiz_btn_2))
-                    ).click()
-                try:
-                    locale_xpath_ul_resp = "//ul[@aria-labelledby='question-prompt']"
-                    menu_items = WebDriverWait(self.driver, 10).until(
-                        EC.presence_of_element_located((By.XPATH, locale_xpath_ul_resp))
-                    )
-                    items = self.driver.find_element(By.XPATH,locale_xpath_ul_resp)
-                except TimeoutException:
-                    logger.error("TimeoutException, couldn't find quiz menu/answers")
-                    return None
-
-                ul_elements = items.find_elements(By.TAG_NAME,'li')
-                # logger.debug(ul_elements)
-                correct_response = x.get('correct_response')
-                print(correct_response)
-                lst_of_correct_responses = []
-                for y in correct_response:
-                    ord_of_char = ord(y)
-                    reset_to_0 = ord_of_char - 97
-                    lst_of_correct_responses.append(reset_to_0)
-                # regex_extract=r'[a-zA-Z]+'
-                # correct_response_lst = re.findall(regex_extract, correct_response)
-                # print(correct_response_lst)
-                for idx, x in enumerate(ul_elements):
-                    if idx in lst_of_correct_responses:
-                        x.click()
-                # data-purpose="next-question-button"
-                # get last entry of console logs
-                last_entry = self.driver.get_log('performance')[-1]
-                last_timestamp = last_entry['timestamp']
-                try:
-                    next_question_btn = "//button[@data-purpose='next-question-button']"
-                    WebDriverWait(self.driver, 10).until(
-                        EC.element_to_be_clickable((By.XPATH, next_question_btn))
-                    ).click()
-                except TimeoutException:
-                    logger.error(f"TimeoutException - couldn't find next button")
-                    return None
-
-                filtered_logs = [x for x in self.driver.get_log('performance') if x['timestamp'] > last_timestamp]
-                lst_of_logs = []
-                for x in filtered_logs:
-                    for k, v in x.items():
-                        if (json_dict := validateJSON(v))[0]:
-                            for x, y in json_dict[1].items():
-                                if type(y) is dict:
-                                    if y['method'] == 'Network.requestWillBeSent':
-                                        if y['params']['request']['method'] == 'POST':
-                                            lst_of_logs.append(y['params']['request']['url'])
-                # check with validate_assessment_url function if the url in list lst_of_logs
-                non_duplicate_lst = list(set(lst_of_logs))
-                lst_of_assessments_ids = [x for x in non_duplicate_lst if
-                                          self.validate_assessment_url(x, self.settings.domain)]
-
-                if len(lst_of_assessments_ids) > 1:
-                    logger.error("Something went wrong, it was supposed to be a lst of ids of length=1")
-                    return None
-                else:
-                    return lst_of_assessments_ids[0]
-
-            except TimeoutException as e:
-                logger.error("Could not find some of the buttons to quiz")
-                logger.warning(e)
-
-                return None
-
-    # oneliner up
-    # def _get_log(self, _last_timestamp):
-    #     last_timestamp = _last_timestamp
-    #     entries = self.driver.get_log("performance")
-    #     filtered = []
-    #
-    #     for entry in entries:
-    #         # check the logged timestamp against the
-    #         # stored timestamp
-    #         if entry["timestamp"] > _last_timestamp:
-    #             filtered.append(entry)
-    #
-    #             # save the last timestamp only if newer
-    #             # in this set of logs
-    #             if entry["timestamp"] > last_timestamp:
-    #                 last_timestamp = entry["timestamp"]
-    #
-    #     return filtered
     @staticmethod
     def validate_assessment_url(url, domain) -> Optional[str]:
         """
@@ -908,60 +797,60 @@ class UdemyActionsUI:
         assessment_lst = self._get_assessments(course_id)
         # build a dict with key as assessment_initial_id and value the number of quizzes with the same id
         initial_id_counts = {}
+        if assessment_lst is not None:
+            for entry in assessment_lst:
+                if entry["assessment_initial_type"] == "practice-test":
+                    initial_id = entry["assessment_initial_id"]
+                    initial_id_counts[initial_id] = initial_id_counts.get(initial_id, 0) + 1
+            logger.info(f"printo il dizionario {initial_id_counts}")
+            lst_of_dicts = {}
 
-        for entry in assessment_lst:
-            if entry["assessment_initial_type"] == "practice-test":
-                initial_id = entry["assessment_initial_id"]
-                initial_id_counts[initial_id] = initial_id_counts.get(initial_id, 0) + 1
-        logger.info(f"printo il dizionario {initial_id_counts}")
-        lst_of_dicts = {}
+            for idx, x in enumerate(assessment_lst):
+                if x.get('assessment_initial_type') == 'practice-test':
+                    assessment_lst_already_done = self._get_already_done_assessments(course_id,
+                                                                                     x.get('assessment_initial_id'))
+                    if assessment_lst_already_done is None:
+                        print(f"Quiz idx: {idx}\n{x} \n\n")
+                        if not x.get('assessment_initial_id') in self._get_completed_assessments(course_id):
+                            logger.info(f"Found the first assessment real id for {x.get('assessment_initial_id')}")
+                            self._solve_first_quiz_with_driver_test(course_id, x)
+                            lst_of_dicts[x.get('assessment_initial_id')] = lst_of_dicts.get(x.get('assessment_initial_id'),
+                                                                                            0) + 1
+                    else:
+                        logger.info(f"Else, sending xhr req")
+                        self._solve_quiz_req_helper(course_id, assessment_lst_already_done, x)
+                        lst_of_dicts[x.get('assessment_initial_id')] = lst_of_dicts.get(
+                            x.get('assessment_initial_id'), 0) + 1
+                        for a, b in lst_of_dicts.items():
+                            print(f"\na {a}, b {b}\n\n")
+                            for c, d in initial_id_counts.items():
+                                # logger.info(f"\nc {c}, d {d}\n\n")
+                                if c == a and b == d - 1:
+                                    if self.solve_last_part_multiple_test(course_id, x):
+                                        logger.info(
+                                            f"Congratulations, successfully completed quiz {x.get('assessment_initial_id')}")
+                                    # logger.info(f"Response {self.send_completition_req_quiz_multiple( course_id, assessment_lst_already_done, x)}")
+                elif x.get('assessment_initial_type') == 'multiple-choice' or x.get(
+                        'assessment_initial_type') == 'simple-quiz':
+                    assessment_lst_already_done = self._get_already_done_assessments \
+                        (course_id, x.get('assessment_initial_id'))
+                    if assessment_lst_already_done is None:
+                        print(f"Quiz idx: {idx}\n{x} \n\n")
+                        if not x.get('assessment_initial_id') in self._get_completed_assessments(course_id):
+                            logger.info(f"Found the first assessment real id for {x.get('assessment_initial_id')}")
+                            self._solve_first_quiz_with_driver_test(course_id, x)
+                    else:
+                        logger.info(f"Else, sending xhr req")
+                        logger.info(self._solve_quiz_req_helper(course_id, assessment_lst_already_done, x))
 
-        for idx, x in enumerate(assessment_lst):
-            if x.get('assessment_initial_type') == 'practice-test':
-                assessment_lst_already_done = self._get_already_done_assessments(course_id,
-                                                                                 x.get('assessment_initial_id'))
-                if assessment_lst_already_done is None:
+                elif x.get('assessment_type') == 'coding-problem' or x.get('assessment_initial_type') == 'coding-exercise':
+                    #
+                    #
+                    # assessment_lst_already_done = self._get_already_done_assessments \
+                    #     (course_id, x.get('assessment_initial_id'))
+                    # if assessment_lst_already_done is None:
                     print(f"Quiz idx: {idx}\n{x} \n\n")
-                    if not x.get('assessment_initial_id') in self._get_completed_assessments(course_id):
-                        logger.info(f"Found the first assessment real id for {x.get('assessment_initial_id')}")
-                        self._solve_first_quiz_with_driver_test(course_id, x)
-                        lst_of_dicts[x.get('assessment_initial_id')] = lst_of_dicts.get(x.get('assessment_initial_id'),
-                                                                                        0) + 1
-                else:
-                    logger.info(f"Else, sending xhr req")
-                    self._solve_quiz_req_helper(course_id, assessment_lst_already_done, x)
-                    lst_of_dicts[x.get('assessment_initial_id')] = lst_of_dicts.get(
-                        x.get('assessment_initial_id'), 0) + 1
-                    for a, b in lst_of_dicts.items():
-                        print(f"\na {a}, b {b}\n\n")
-                        for c, d in initial_id_counts.items():
-                            # logger.info(f"\nc {c}, d {d}\n\n")
-                            if c == a and b == d - 1:
-                                if self.solve_last_part_multiple_test(course_id, x):
-                                    logger.info(
-                                        f"Congratulations, successfully completed quiz {x.get('assessment_initial_id')}")
-                                # logger.info(f"Response {self.send_completition_req_quiz_multiple( course_id, assessment_lst_already_done, x)}")
-            elif x.get('assessment_initial_type') == 'multiple-choice' or x.get(
-                    'assessment_initial_type') == 'simple-quiz':
-                assessment_lst_already_done = self._get_already_done_assessments \
-                    (course_id, x.get('assessment_initial_id'))
-                if assessment_lst_already_done is None:
-                    print(f"Quiz idx: {idx}\n{x} \n\n")
-                    if not x.get('assessment_initial_id') in self._get_completed_assessments(course_id):
-                        logger.info(f"Found the first assessment real id for {x.get('assessment_initial_id')}")
-                        self._solve_first_quiz_with_driver_test(course_id, x)
-                else:
-                    logger.info(f"Else, sending xhr req")
-                    logger.info(self._solve_quiz_req_helper(course_id, assessment_lst_already_done, x))
-
-            elif x.get('assessment_type') == 'coding-problem' or x.get('assessment_initial_type') == 'coding-exercise':
-                #
-                #
-                # assessment_lst_already_done = self._get_already_done_assessments \
-                #     (course_id, x.get('assessment_initial_id'))
-                # if assessment_lst_already_done is None:
-                print(f"Quiz idx: {idx}\n{x} \n\n")
-                self._solve_coding_problem(course_id, x)
+                    self._solve_coding_problem(course_id, x)
 
     def _solve_coding_problem(self, course_id, x: json):
 
@@ -1004,7 +893,9 @@ class UdemyActionsUI:
                 WebDriverWait(self.driver, 10). \
                     until(EC.element_to_be_clickable((By.XPATH, check_button))) \
                     .click()
-                time.sleep(8)
+                feedback_div= "//div[@data-purpose='feedback-title']"
+                WebDriverWait(self.driver, 10). \
+                    until(EC.presence_of_element_located((By.XPATH, feedback_div)))
                 next_question_btn = "//div[@data-purpose='go-to-next']"
                 WebDriverWait(self.driver, 10). \
                     until(EC.element_to_be_clickable((By.XPATH, next_question_btn))) \
@@ -1098,10 +989,10 @@ class UdemyActionsUI:
                 except TimeoutException:
                     logger.error("TimeoutException, couldn't find quiz menu/answers")
                     return None
-
-                if x.get('assessment_initial_type') == 'simple-quiz':
+                print(x.get('assessment_initial_type'))
+                if x.get('assessment_initial_type') == 'simple-quiz' or x.get('assessment_initial_type') == 'multiple-choice'\
+                        or x.get('assessment_initial_type') == 'practice-test':
                     ul_elements = items.find_elements(By.TAG_NAME,'li')
-                    # logger.debug(ul_elements)
                     correct_response = x.get('correct_response')
                     print(correct_response)
                     lst_of_correct_responses = []
@@ -1118,11 +1009,7 @@ class UdemyActionsUI:
                     # data-purpose="next-question-button"
                     # get last entry of console logs
 
-                elif x.get('assessment_initial_type') == 'coding-exercise':
-                    logger.info("Not a simple quiz")
-                    logger.info(x.get('assessment_initial_type'))
-                    solution_files = x.get('prompt').get('solution_files')
-                    logger.info(solution_files)
+
                 last_entry = self.driver.get_log('performance')[-1]
                 last_timestamp = last_entry['timestamp']
                 try:
@@ -1132,7 +1019,14 @@ class UdemyActionsUI:
                     ).click()
                 except TimeoutException:
                     logger.error(f"TimeoutException - couldn't find next button")
-                    return None
+                    try:
+                        next_question_btn_2 = "//button[@data-purpose='go-to-next-question']"
+                        WebDriverWait(self.driver, 10).until(
+                            EC.element_to_be_clickable((By.XPATH, next_question_btn_2))
+                        ).click()
+                    except TimeoutException:
+                        logger.error(f"TimeoutException - couldn't find next button2")
+                        return None
 
                 filtered_logs = [x for x in self.driver.get_log('performance') if
                                  x['timestamp'] > last_timestamp]
@@ -1161,3 +1055,22 @@ class UdemyActionsUI:
                 logger.warning(e)
 
                 return None
+
+    # oneliner up
+    # def _get_log(self, _last_timestamp):
+    #     last_timestamp = _last_timestamp
+    #     entries = self.driver.get_log("performance")
+    #     filtered = []
+    #
+    #     for entry in entries:
+    #         # check the logged timestamp against the
+    #         # stored timestamp
+    #         if entry["timestamp"] > _last_timestamp:
+    #             filtered.append(entry)
+    #
+    #             # save the last timestamp only if newer
+    #             # in this set of logs
+    #             if entry["timestamp"] > last_timestamp:
+    #                 last_timestamp = entry["timestamp"]
+    #
+    #     return filtered
