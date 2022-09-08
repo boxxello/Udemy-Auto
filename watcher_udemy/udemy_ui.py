@@ -353,7 +353,7 @@ class UdemyActionsUI:
         return UdemyStatus.ALREADY_ENROLLED.value, cs_link, course_id
 
     def _find_all_lectures(self, first_link_to) -> List[str]:
-        logger.info(f"Finding all lectures in: '{first_link_to}'")
+        logger.info(f"Finding all courses in: '{first_link_to}'")
         resp_json_json = self._resp_from_url_with_session(first_link_to)
 
         next_links_lst = []
@@ -399,6 +399,7 @@ class UdemyActionsUI:
     @staticmethod
     def extract_cs_id(url: str, domain: str) -> int:
         pattern = fr"^https:\/\/(www\.)?{domain}\.udemy\.com\/course-dashboard-redirect\/\?course_id=(?P<extract_num>\d+)$"
+        logger.debug("url che arriva {}".format(url))
         matches = regex.search(pattern, url, regex.M)
         if not matches:
             new_pattern = fr"https:\/\/(www\.)?{domain}\.udemy\.com\/course\/(?P<extract_num>\d+)\/?$"
@@ -575,8 +576,9 @@ class UdemyActionsUI:
         return is_robot
 
     def _get_course_link_wrapper(self, course_link, domain):
+        logger.debug(f"Course link wrapper--- Getting course id and link for: {course_link} ")
         if (return_st := self._get_course_link_from_redirect(course_link, domain))[1]:
-
+            logger.debug(f"Redirected to {return_st[0]} and id {return_st[1]}")
             return return_st[0], return_st[1]
         elif (return_st := self._get_course_id(course_link)):
             return self.REQUEST_LECTURES.format(return_st), return_st

@@ -73,7 +73,7 @@ def _watch_courses_ui(
         udemy_course_links = []
         for x in udemy_course_progress_id:
             udemy_course_links.append(udemy_actions.URL_TO_COURSE_ID.format(x))
-
+        logger.debug(f"Already enrolled courses {udemy_course_links}")
         logger.debug("OLEE")
         if get_random_links:
             new_links = loop.run_until_complete(scrapers.run())
@@ -90,7 +90,7 @@ def _watch_courses_ui(
                 try:
                     try:
                         cs_link, course_id = udemy_actions._get_course_link_wrapper(course_link, settings.domain)
-                        logger.info("In the courses already rolled ")
+                        logger.info("In the courses already enrolled ")
                         status = UdemyStatus.ALREADY_ENROLLED.value
                     except CourseNotFoundException:
                         logger.info("Not in a rolled in course")
@@ -98,7 +98,7 @@ def _watch_courses_ui(
                         pass
                     if status == UdemyStatus.ENROLLED.value or status == UdemyStatus.ALREADY_ENROLLED.value:
 
-                        logger.info(f"Enrolled/Already enrolled in {cs_link}, trying to get it to finish")
+                        logger.info(f"Enrolled/Already enrolled in course with id: {course_id}, trying to get it to finish")
                         course_details = udemy_actions._get_course_details(course_id)
                         course_details_complt = course_details.get('completion_ratio')
                         course_details_has_quizzes = course_details.get('num_quizzes')
