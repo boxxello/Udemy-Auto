@@ -797,7 +797,7 @@ class UdemyActionsUI:
         assessment_lst = self._get_assessments(course_id)
         # build a dict with key as assessment_initial_id and value the number of quizzes with the same id
         initial_id_counts = {}
-        if len(assessment_lst) > 0:
+        if assessment_lst is not None:
             for entry in assessment_lst:
                 if entry["assessment_initial_type"] == "practice-test":
                     initial_id = entry["assessment_initial_id"]

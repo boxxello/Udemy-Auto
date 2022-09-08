@@ -101,7 +101,7 @@ def parse_args() -> Namespace:
     parser.add_argument(
         "--get_random_links",
         action="store_true",
-        default=False,
+        default=True,
         help="Complete the current course in progress",
     )
     parser.add_argument(
